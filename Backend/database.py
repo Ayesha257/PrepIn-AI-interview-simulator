@@ -1,37 +1,23 @@
-import os
-from motor.motor_asyncio import AsyncIOMotorClient
-from dotenv import load_dotenv
+import motor.motor_asyncio
+from decouple import config
 
-load_dotenv()
+MONGO_URL = config("MONGO_URL")
+DB_NAME = config("DB_NAME")
 
-MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
-DB_NAME = os.getenv("DB_NAME", "ai_interview_simulator")
-
-client: AsyncIOMotorClient = None
+client = None
 db = None
-
 
 async def connect_db():
     global client, db
-    client = AsyncIOMotorClient(MONGO_URI)
+    print("MONGO_URL =", MONGO_URL)
+    client = motor.motor_asyncio.AsyncIOMotorClient(MONGO_URL)
     db = client[DB_NAME]
-    print(f"✅ Connected to MongoDB: {DB_NAME}")
+    print(f"Connected to {DB_NAME}")
 
-
-async def close_db():
+async def disconnect_db():
     global client
     if client:
         client.close()
-        print("❌ MongoDB connection closed")
-
 
 def get_db():
     return db
-
-
-def get_users_collection():
-    return db["users"]
-
-
-def get_resumes_collection():
-    return db["resumes"]

@@ -1,59 +1,82 @@
 from fastapi import APIRouter, HTTPException, status, Depends
-from datetime import datetime
+from datetime import datetime, timezone
 from bson import ObjectId
-from database import get_users_collection
-from models.user import UserCreate, UserLogin, UserProfile
+from database import get_db
+from models.user import UserRegister, UserLogin, UserUpdateProfile, UserResponse, TokenResponse
 from utils.auth import hash_password, verify_password, create_access_token, get_current_user
+from fastapi.security import OAuth2PasswordRequestForm
 
-router = APIRouter(prefix="/api/auth", tags=["Auth"])
+router = APIRouter()
 
-
-@router.post("/register", status_code=status.HTTP_201_CREATED)
-async def register(user: UserCreate):
-    users_col = get_users_collection()
-
-    # Check if email already exists
-    existing = await users_col.find_one({"email": user.email})
-    if existing:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
-        )
-
-    # Hash password and store user
-    hashed = hash_password(user.password)
-    new_user = {
-        "full_name": user.full_name,
-        "email": user.email,
-        "hashed_password": hashed,
-        "created_at": datetime.utcnow(),
-        "resume_id": None
-    }
-    result = await users_col.insert_one(new_user)
-
-    # Generate token immediately so frontend can auto-login after register
-    token = create_access_token({"sub": str(result.inserted_id)})
-
+def serialize_user(user: dict) -> dict:
+    """Convert MongoDB user doc to serializable dict."""
     return {
-        "message": "Account created successfully",
-        "access_token": token,
-        "token_type": "bearer",
-        "user": {
-            "id": str(result.inserted_id),
-            "full_name": user.full_name,
-            "email": user.email
+        "id": str(user["_id"]),
+        "name": user["name"],
+        "email": user["email"],
+        "created_at": user["created_at"],
+        "profile": user.get("profile", None),
+    }
+
+# ──────────────────────────────
+# POST /api/auth/register
+# ──────────────────────────────
+@router.post("/register", response_model=TokenResponse, status_code=201)
+async def register(body: UserRegister):
+    db = get_db()
+    print("LOGIN DB =", db)
+    print("CLIENT =", db.client)    
+    # Check if email already exists
+    existing = await db.users.find_one({"email": body.email})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+    now = datetime.now(timezone.utc)
+    user_doc = {
+        "name": body.name,
+        "email": body.email,
+        "hashed_password": hash_password(body.password),
+        "created_at": now,
+        "updated_at": now,
+        "profile": {
+            "target_role": None,
+            "years_of_experience": None,
+            "interview_count": 0,
         }
     }
 
+    result = await db.users.insert_one(user_doc)
+    user_doc["_id"] = result.inserted_id
 
-@router.post("/login")
-async def login(credentials: UserLogin):
-    users_col = get_users_collection()
+    token = create_access_token({"sub": str(result.inserted_id)})
+    return {"access_token": token, "token_type": "bearer", "user": serialize_user(user_doc)}
 
-    user = await users_col.find_one({"email": credentials.email})
-    if not user or not verify_password(credentials.password, user["hashed_password"]):
+# ──────────────────────────────
+# POST /api/auth/login
+# ──────────────────────────────
+@router.post("/login", response_model=TokenResponse)
+async def login(body: UserLogin):
+    db = get_db()
+
+    user = await db.users.find_one({"email": body.email})
+    if not user or not verify_password(body.password, user["hashed_password"]):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+
+    token = create_access_token({"sub": str(user["_id"])})
+    return {"access_token": token, "token_type": "bearer", "user": serialize_user(user)}
+
+@router.post("/token")
+async def login_for_swagger(
+    form_data: OAuth2PasswordRequestForm = Depends()
+):
+    db = get_db()
+
+    # Swagger sends the email in the username field
+    user = await db.users.find_one({"email": form_data.username})
+
+    if not user or not verify_password(form_data.password, user["hashed_password"]):
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+            status_code=401,
             detail="Invalid email or password"
         )
 
@@ -61,48 +84,35 @@ async def login(credentials: UserLogin):
 
     return {
         "access_token": token,
-        "token_type": "bearer",
-        "user": {
-            "id": str(user["_id"]),
-            "full_name": user["full_name"],
-            "email": user["email"]
-        }
+        "token_type": "bearer"
     }
 
+# ──────────────────────────────
+# GET /api/auth/me  (protected)
+# ──────────────────────────────
+@router.get("/me", response_model=UserResponse)
+async def get_me(current_user: dict = Depends(get_current_user)):
+    return serialize_user(current_user)
 
-@router.get("/me", response_model=UserProfile)
-async def get_profile(user_id: str = Depends(get_current_user)):
-    users_col = get_users_collection()
+# ──────────────────────────────
+# PUT /api/auth/profile  (protected)
+# ──────────────────────────────
+@router.put("/profile", response_model=UserResponse)
+async def update_profile(body: UserUpdateProfile, current_user: dict = Depends(get_current_user)):
+    db = get_db()
+    update_data = {"updated_at": datetime.now(timezone.utc)}
 
-    user = await users_col.find_one({"_id": ObjectId(user_id)})
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+    if body.name:
+        update_data["name"] = body.name
+    if body.profile:
+        profile_update = body.profile.dict(exclude_none=True)
+        for key, val in profile_update.items():
+            update_data[f"profile.{key}"] = val
 
-    return UserProfile(
-        id=str(user["_id"]),
-        full_name=user["full_name"],
-        email=user["email"],
-        created_at=user.get("created_at"),
-        resume_id=user.get("resume_id")
+    await db.users.update_one(
+        {"_id": current_user["_id"]},
+        {"$set": update_data}
     )
 
-
-@router.put("/me")
-async def update_profile(
-    updates: dict,
-    user_id: str = Depends(get_current_user)
-):
-    users_col = get_users_collection()
-
-    # Only allow safe fields to be updated
-    allowed_fields = {"full_name"}
-    safe_updates = {k: v for k, v in updates.items() if k in allowed_fields}
-
-    if not safe_updates:
-        raise HTTPException(status_code=400, detail="No valid fields to update")
-
-    await users_col.update_one(
-        {"_id": ObjectId(user_id)},
-        {"$set": safe_updates}
-    )
-    return {"message": "Profile updated successfully"}
+    updated = await db.users.find_one({"_id": current_user["_id"]})
+    return serialize_user(updated)
