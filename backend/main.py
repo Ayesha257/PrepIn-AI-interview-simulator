@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from routes import interview, report
 from routes.auth import router as auth_router
 from routes.resume import router as resume_router
 from routes.analytics import router as analytics_router
@@ -20,10 +21,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Register routers
+# Ayesha's routers
 app.include_router(auth_router, prefix="/api/auth", tags=["Auth"])
 app.include_router(resume_router, prefix="/api/resume", tags=["Resume"])
 app.include_router(analytics_router, prefix="/api/analytics", tags=["Analytics"])
+
+# Faiqa's routers
+app.include_router(interview.router, prefix="/interview", tags=["Interview"])
+app.include_router(report.router, prefix="/report", tags=["Report"])
 
 @app.on_event("startup")
 async def startup():

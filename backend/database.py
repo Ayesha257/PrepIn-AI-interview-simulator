@@ -1,3 +1,15 @@
+<<<<<<< HEAD
+from pymongo import MongoClient
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+client = MongoClient(os.getenv("MONGO_URI"))
+db = client["interview_simulator"]
+
+print("Connected to database:", db.name)
+=======
 import motor.motor_asyncio
 from decouple import config
 
@@ -21,3 +33,4 @@ async def disconnect_db():
 
 def get_db():
     return db
+>>>>>>> origin/main
