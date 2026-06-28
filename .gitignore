@@ -8,6 +8,7 @@ Backend/**/__pycache__/
 
 # Environment (NEVER push this — has passwords!)
 Backend/.env
+.env
 
 # Uploads (actual resume files)
 Backend/uploads/
