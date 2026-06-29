@@ -5,6 +5,7 @@ from database import get_db
 from models.user import UserRegister, UserLogin, UserUpdateProfile, UserResponse, TokenResponse
 from utils.auth import hash_password, verify_password, create_access_token, get_current_user
 from fastapi.security import OAuth2PasswordRequestForm
+from config import settings
 
 router = APIRouter()
 
