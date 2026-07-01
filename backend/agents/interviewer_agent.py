@@ -29,13 +29,3 @@ def generate_question(skills: list, job_role: str, difficulty: str, previous_que
         ])
 
     return response.choices[0].message.content
-
-if __name__ == "__main__":
-    question = generate_question(
-        skills=["Python", "FastAPI", "MongoDB"],
-        job_role="Backend Developer",
-        difficulty="medium",
-        previous_questions=[],
-        is_followup=False
-    )
-    print(question)
