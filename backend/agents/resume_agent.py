@@ -6,11 +6,8 @@ from groq import Groq
 
 from pathlib import Path
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
-<<<<<<< HEAD
-client = Groq(api_key="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")
-=======
+
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
->>>>>>> 610ec63aebcbb8367379ea9ed5176ee205160c95
 
 RESUME_PARSE_PROMPT = """
 You are a resume parser. Extract the following from the resume text below and return ONLY valid JSON, nothing else.

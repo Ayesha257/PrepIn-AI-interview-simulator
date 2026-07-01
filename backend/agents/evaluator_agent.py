@@ -6,11 +6,8 @@ from groq import Groq
 
 from pathlib import Path
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
-<<<<<<< HEAD
-client = Groq(api_key="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")
-=======
+
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
->>>>>>> 610ec63aebcbb8367379ea9ed5176ee205160c95
 
 LOOP_BACK_THRESHOLD = 5.0
 
@@ -25,11 +22,8 @@ Score the answer from 0.0 to 10.0 based on:
 - Depth (did they explain enough?)
 - Clarity (was it easy to understand?)
 
-<<<<<<< HEAD
-=======
 Write feedback directly addressing the candidate as "you" (e.g. "Your answer lacks depth..."), not in third person.
 
->>>>>>> 610ec63aebcbb8367379ea9ed5176ee205160c95
 Return ONLY valid JSON (no markdown, no explanation):
 {{
   "score": 7.5,
