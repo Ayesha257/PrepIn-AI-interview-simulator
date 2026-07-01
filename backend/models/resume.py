@@ -14,7 +14,10 @@ class ResumeResponse(BaseModel):
     uploaded_at: datetime
     is_parsed: bool
     status: str
-    parsed_skills: List[ParsedSkill] = []
+    skills: List[str] = []
+    experience_years: int = 0
+    education: str = ""
+    job_role: str = ""
 
 class ResumeListResponse(BaseModel):
     resumes: List[ResumeResponse]
