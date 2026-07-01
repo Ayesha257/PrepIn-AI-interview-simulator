@@ -1,23 +1,30 @@
+from pymongo import MongoClient
+from dotenv import load_dotenv
 import motor.motor_asyncio
-from decouple import config
+import os
 
-MONGO_URL = config("MONGO_URL")
-DB_NAME = config("DB_NAME")
+load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env'))
 
-client = None
-db = None
+# Faiqa's sync client (used in interview + report routes)
+client = MongoClient(os.getenv("MONGO_URL"))
+db = client["interview_simulator"]
+
+# Ayesha's async client (used in auth + resume + analytics routes)
+MONGO_URL = os.getenv("MONGO_URL")
+DB_NAME = "interview_simulator"
+
+async_client = None
+async_db = None
 
 async def connect_db():
-    global client, db
-    print("MONGO_URL =", MONGO_URL)
-    client = motor.motor_asyncio.AsyncIOMotorClient(MONGO_URL)
-    db = client[DB_NAME]
-    print(f"Connected to {DB_NAME}")
+    global async_client, async_db
+    async_client = motor.motor_asyncio.AsyncIOMotorClient(MONGO_URL)
+    async_db = async_client[DB_NAME]
 
 async def disconnect_db():
-    global client
-    if client:
-        client.close()
+    global async_client
+    if async_client:
+        async_client.close()
 
 def get_db():
-    return db
+    return async_db

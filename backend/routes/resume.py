@@ -5,6 +5,20 @@ import os, shutil
 from database import get_db
 from models.resume import ResumeResponse, ResumeListResponse
 from utils.auth import get_current_user
+from pypdf import PdfReader
+import docx
+from agents.resume_agent import run_resume_agent
+
+def extract_text(file_path: str, content_type: str) -> str:
+    if content_type == "application/pdf":
+        reader = PdfReader(file_path)
+        text = ""
+        for page in reader.pages:
+            text += page.extract_text() or ""
+        return text
+    else:
+        doc = docx.Document(file_path)
+        return "\n".join([para.text for para in doc.paragraphs])
 
 router = APIRouter()
 
@@ -23,7 +37,10 @@ def serialize_resume(r: dict) -> dict:
         "uploaded_at": r["uploaded_at"],
         "is_parsed": r.get("is_parsed", False),
         "status": r.get("status", "uploaded"),
-        "parsed_skills": r.get("parsed_skills", []),
+        "skills": r.get("skills", []),
+        "experience_years": r.get("experience_years", 0),
+        "education": r.get("education", ""),
+        "job_role": r.get("job_role", ""),
     }
 
 # ──────────────────────────────
@@ -53,16 +70,25 @@ async def upload_resume(
     with open(file_path, "wb") as f:
         f.write(content)
 
+    # Extract text from the file
+    resume_text = extract_text(file_path, file.content_type)
+
+    # Run the Resume Agent to parse skills
+    parsed_data = run_resume_agent(user_id_str, resume_text)
+
     db = get_db()
     resume_doc = {
-        "user_id": current_user["_id"],
-        "filename": file.filename,
-        "file_path": file_path,
-        "uploaded_at": datetime.now(timezone.utc),
-        "is_parsed": False,
-        "status": "uploaded",
-        "parsed_skills": [],
-        "raw_text": None,
+    "user_id": current_user["_id"],
+    "filename": file.filename,
+    "file_path": file_path,
+    "uploaded_at": datetime.now(timezone.utc),
+    "is_parsed": True,
+    "status": "parsed",
+    "skills": parsed_data["skills"],
+    "experience_years": parsed_data["experience_years"],
+    "education": parsed_data["education"],
+    "job_role": parsed_data["job_role"],
+    "raw_text": resume_text
     }
 
     result = await db.resumes.insert_one(resume_doc)
