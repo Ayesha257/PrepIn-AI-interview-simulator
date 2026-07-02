@@ -25,11 +25,10 @@ async def create_session(current_user: dict = Depends(get_current_user)):
 @router.get("/session/{session_id}")
 async def get_session(session_id: str, current_user: dict = Depends(get_current_user)):
     session = db["sessions"].find_one(ObjectId(session_id))
-    
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
-    
     session["_id"] = str(session["_id"])
+    session["user_id"] = str(session["user_id"])
     return {"session": session}
 
 # @router.patch("/session/{session_id}")
