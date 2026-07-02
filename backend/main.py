@@ -37,11 +37,3 @@ async def startup():
 @app.on_event("shutdown")
 async def shutdown():
     await disconnect_db()
-
-@app.get("/")
-async def root():
-    return {"message": "PrepIn API is running 🚀", "version": "1.0.0"}
-
-@app.get("/health")
-async def health():
-    return {"status": "ok"}
