@@ -30,3 +30,17 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserResponse
+
+class User(BaseModel):
+    email: str
+    password: Optional[str] = None
+    is_verified: bool = False
+    auth_provider: str  # "google" ya "email"
+
+class GoogleTokenIn(BaseModel):
+    token: str
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str
+    user: Optional[dict] = None
