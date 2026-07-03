@@ -6,6 +6,7 @@ from groq import Groq
 
 from pathlib import Path
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 LOOP_BACK_THRESHOLD = 5.0

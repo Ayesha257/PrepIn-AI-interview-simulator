@@ -40,6 +40,15 @@ export const authAPI = {
   login: (data) =>
     apiFetch("/auth/login", { method: "POST", body: JSON.stringify(data) }),
 
+  googleLogin: (token) =>
+    apiFetch("/auth/google-login", {
+      method: "POST",
+      body: JSON.stringify({ token }),
+    }),
+
+  verifyEmail: (token) =>
+    apiFetch(`/auth/verify-email?token=${token}`, { method: "GET" }),
+
   getMe: () => apiFetch("/auth/me"),
 
   updateProfile: (data) =>
@@ -65,4 +74,22 @@ export const resumeAPI = {
 export const analyticsAPI = {
   getDashboard: () => apiFetch("/analytics/dashboard"),
   getHistory: () => apiFetch("/analytics/history"),
+  getTrend: () => apiFetch("/analytics/trend"),
+};
+
+// ──────────────── INTERVIEW ────────────────
+export const interviewAPI = {
+  createSession: () =>
+    apiFetch("/interview/session", { method: "POST" }),
+
+  startInterview: (sessionId) =>
+    apiFetch(`/interview/start?session_id=${sessionId}`, { method: "POST" }),
+
+  submitAnswer: (sessionId, userAnswer) =>
+    apiFetch(
+      `/interview/answer?session_id=${sessionId}&user_answer=${encodeURIComponent(userAnswer)}`,
+      { method: "POST" }
+    ),
+
+  getSession: (sessionId) => apiFetch(`/interview/session/${sessionId}`),
 };
