@@ -35,6 +35,12 @@ async def get_session(session_id: str, current_user: dict = Depends(get_current_
         session["resume_id"] = str(session["resume_id"])
 
     return session
+    session = db["sessions"].find_one(ObjectId(session_id))
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    session["_id"] = str(session["_id"])
+    session["user_id"] = str(session["user_id"])
+    return {"session": session}
 
 # @router.patch("/session/{session_id}")
 # async def update_session(session_id: str, question: str, answer: str, score: str, feedback: str, current_user: dict = Depends(get_current_user)):
