@@ -6,8 +6,9 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import Interview from "./pages/interview";
-import VerifyEmail from "./pages/VerifyEmail";
-import { GoogleLogin } from "@react-oauth/google";
+import VerifyCode from "./pages/VerifyCode";
+import ResetPassword from "./pages/Resetpassword";
+
 // Protected route wrapper
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
@@ -34,11 +35,11 @@ function AppRoutes() {
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
       <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
+      <Route path="/verify-code" element={<VerifyCode />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
       <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
       <Route path="/interview" element={<PrivateRoute><Interview /></PrivateRoute>} />
-      <Route path="/verify-email" element={<VerifyEmail />} />
-      <Route path="/google-login" element={<GoogleLogin />} />
     </Routes>
   );
 }

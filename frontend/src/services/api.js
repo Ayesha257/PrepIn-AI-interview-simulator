@@ -37,17 +37,26 @@ export const authAPI = {
   register: (data) =>
     apiFetch("/auth/register", { method: "POST", body: JSON.stringify(data) }),
 
+  verifyCode: (email, code) =>
+    apiFetch("/auth/verify-code", { method: "POST", body: JSON.stringify({ email, code }) }),
+
+  resendVerification: (email) =>
+    apiFetch(`/auth/resend-verification?email=${encodeURIComponent(email)}`, { method: "POST" }),
+
   login: (data) =>
     apiFetch("/auth/login", { method: "POST", body: JSON.stringify(data) }),
 
   googleLogin: (token) =>
-    apiFetch("/auth/google-login", {
-      method: "POST",
-      body: JSON.stringify({ token }),
-    }),
+    apiFetch("/auth/google-login", { method: "POST", body: JSON.stringify({ token }) }),
 
-  verifyEmail: (token) =>
-    apiFetch(`/auth/verify-email?token=${token}`, { method: "GET" }),
+  forgotPassword: (email) =>
+    apiFetch("/auth/forgot-password", { method: "POST", body: JSON.stringify({ email }) }),
+
+  resetPassword: (email, code, newPassword) =>
+    apiFetch("/auth/reset-password", {
+      method: "POST",
+      body: JSON.stringify({ email, code, new_password: newPassword }),
+    }),
 
   getMe: () => apiFetch("/auth/me"),
 
