@@ -33,6 +33,11 @@ export function AuthProvider({ children }) {
 
   const register = async (name, email, password) => {
     const data = await authAPI.register({ name, email, password });
+    return data; // no token yet — user must verify code first
+  };
+
+  const verifyCode = async (email, code) => {
+    const data = await authAPI.verifyCode(email, code);
     localStorage.setItem("token", data.access_token);
     setUser(data.user);
     return data;
@@ -44,7 +49,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, verifyCode, logout }}>
       {children}
     </AuthContext.Provider>
   );
