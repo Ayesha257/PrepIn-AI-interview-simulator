@@ -10,7 +10,7 @@ from datetime import datetime
 from fastapi import HTTPException
 
 
-async def orchestrate_workflow(session_id : str, user_answer : str):
+async def orchestrate_workflow(session_id: str, user_answer: str):
     session = db["sessions"].find_one(ObjectId(session_id))
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -27,22 +27,20 @@ async def orchestrate_workflow(session_id : str, user_answer : str):
     feedback = evaluation["feedback"]
     signal = evaluation["signal"]
 
-    question_data = {
-        "question" : last_question,
-        "answer" : user_answer,
-        "score" : score,
-        "feedback" : feedback
-    }
-
+    # FIX: update the existing last question entry instead of pushing a duplicate
     db["sessions"].update_one(
-        {"_id" : ObjectId(session_id)},
-        {"$push" : {"questions" : question_data} }
+        {"_id": ObjectId(session_id)},
+        {"$set": {
+            f"questions.{question_count - 1}.answer": user_answer,
+            f"questions.{question_count - 1}.score": score,
+            f"questions.{question_count - 1}.feedback": feedback,
+        }}
     )
 
-    if question_count >=5:
+    if question_count >= 5:
         db["sessions"].update_one(
-            {"_id" : ObjectId(session_id)},
-            {"$set" : {"status" : "completed", "ended_at" : datetime.utcnow()}}
+            {"_id": ObjectId(session_id)},
+            {"$set": {"status": "completed", "ended_at": datetime.utcnow()}}
         )
         next_question = None
         status = "completed"
@@ -56,35 +54,46 @@ async def orchestrate_workflow(session_id : str, user_answer : str):
             next_question = generate_question(skills, job_role, difficulty, previous_questions, True, user_answer)
         else:
             next_question = generate_question(skills, job_role, difficulty, previous_questions, False, user_answer)
-        status = "in_progress"
-        
-    return {"score" : score, "feedback" : feedback, "next_question" : next_question, "status" : status}
 
-async def start_interview(session_id : str):
+        # FIX: actually save the next question so it can be matched correctly next time
+        next_question_data = {
+            "question": next_question,
+            "answer": None,
+            "score": None,
+            "feedback": None
+        }
+        db["sessions"].update_one(
+            {"_id": ObjectId(session_id)},
+            {"$push": {"questions": next_question_data}}
+        )
+
+        status = "in_progress"
+
+    return {"score": score, "feedback": feedback, "next_question": next_question, "status": status}
+
+
+async def start_interview(session_id: str):
     session = db["sessions"].find_one(ObjectId(session_id))
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     session["_id"] = str(session["_id"])
 
     resume_data = await fetch_resume_skills(session["user_id"])
-    print("RESUME DATA:", resume_data)
     skills = resume_data["skills"]
     job_role = resume_data["job_role"]
-    print("SKILLS:", skills)
-    print("JOB ROLE:", job_role)
 
     first_question = generate_question(skills, job_role, "medium", [], False, None)
 
     question_data = {
-    "question": first_question,
-    "answer": None,
-    "score": None,
-    "feedback": None
+        "question": first_question,
+        "answer": None,
+        "score": None,
+        "feedback": None
     }
 
     db["sessions"].update_one(
-        {"_id" : ObjectId(session_id)},
-        {"$push" : {"questions" : question_data}}
+        {"_id": ObjectId(session_id)},
+        {"$push": {"questions": question_data}}
     )
 
-    return {"question" : first_question}
+    return {"question": first_question}

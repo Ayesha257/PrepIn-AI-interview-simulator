@@ -10,14 +10,14 @@ router = APIRouter()
 @router.post("/session")
 async def create_session(current_user: dict = Depends(get_current_user)):
     session = {
-        "user_id": current_user["_id"],  # store as ObjectId to match resume
+        "user_id": current_user["_id"],
         "status": "in_progress",
         "started_at": datetime.utcnow(),
         "ended_at": None,
         "questions": [],
         "final_report_id": None
     }
-    result = await db.sessions.insert_one(session)
+    result = db.sessions.insert_one(session)   # ← await hataya
     return {"session_id": str(result.inserted_id)}
 
 @router.get("/session/{session_id}")
