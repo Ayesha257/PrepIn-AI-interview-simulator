@@ -4,18 +4,24 @@ from datetime import datetime
 from bson import ObjectId
 from agents.orchestrator import start_interview, orchestrate_workflow
 from utils.auth import get_current_user
+from schemas.session_schema import SessionCreate
 
 router = APIRouter()
 
 @router.post("/session")
-async def create_session(current_user: dict = Depends(get_current_user)):
+async def create_session(
+    body: SessionCreate,
+    current_user: dict = Depends(get_current_user)
+):
     session = {
         "user_id": current_user["_id"],
         "status": "in_progress",
         "started_at": datetime.utcnow(),
         "ended_at": None,
         "questions": [],
-        "final_report_id": None
+        "final_report_id": None,
+        "target_role": body.target_role,
+        "seniority_level": body.seniority_level,
     }
     result = db["sessions"].insert_one(session)
     return {"session_id": str(result.inserted_id)}
