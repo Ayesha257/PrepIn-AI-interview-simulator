@@ -37,17 +37,26 @@ export const authAPI = {
   register: (data) =>
     apiFetch("/auth/register", { method: "POST", body: JSON.stringify(data) }),
 
+  verifyCode: (email, code) =>
+    apiFetch("/auth/verify-code", { method: "POST", body: JSON.stringify({ email, code }) }),
+
+  resendVerification: (email) =>
+    apiFetch(`/auth/resend-verification?email=${encodeURIComponent(email)}`, { method: "POST" }),
+
   login: (data) =>
     apiFetch("/auth/login", { method: "POST", body: JSON.stringify(data) }),
 
   googleLogin: (token) =>
-    apiFetch("/auth/google-login", {
-      method: "POST",
-      body: JSON.stringify({ token }),
-    }),
+    apiFetch("/auth/google-login", { method: "POST", body: JSON.stringify({ token }) }),
 
-  verifyEmail: (token) =>
-    apiFetch(`/auth/verify-email?token=${token}`, { method: "GET" }),
+  forgotPassword: (email) =>
+    apiFetch("/auth/forgot-password", { method: "POST", body: JSON.stringify({ email }) }),
+
+  resetPassword: (email, code, newPassword) =>
+    apiFetch("/auth/reset-password", {
+      method: "POST",
+      body: JSON.stringify({ email, code, new_password: newPassword }),
+    }),
 
   getMe: () => apiFetch("/auth/me"),
 
@@ -79,8 +88,11 @@ export const analyticsAPI = {
 
 // ──────────────── INTERVIEW ────────────────
 export const interviewAPI = {
-  createSession: () =>
-    apiFetch("/interview/session", { method: "POST" }),
+  createSession: (targetRole, seniorityLevel) =>
+    apiFetch("/interview/session", {
+      method: "POST",
+      body: JSON.stringify({ target_role: targetRole, seniority_level: seniorityLevel }),
+    }),
 
   startInterview: (sessionId) =>
     apiFetch(`/interview/start?session_id=${sessionId}`, { method: "POST" }),
@@ -92,4 +104,9 @@ export const interviewAPI = {
     ),
 
   getSession: (sessionId) => apiFetch(`/interview/session/${sessionId}`),
+};
+
+// ──────────────── REPORT ────────────────
+export const reportAPI = {
+  getReport: (sessionId) => apiFetch(`/report/report/${sessionId}`),
 };

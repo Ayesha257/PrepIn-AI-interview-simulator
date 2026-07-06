@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr, Field
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 
 class UserRegister(BaseModel):
@@ -14,6 +14,7 @@ class UserLogin(BaseModel):
 class UserProfile(BaseModel):
     target_role: Optional[str] = None
     years_of_experience: Optional[int] = Field(None, ge=0, le=50)
+    skills: Optional[List[str]] = None
 
 class UserUpdateProfile(BaseModel):
     name: Optional[str] = Field(None, min_length=2, max_length=50)
@@ -44,3 +45,15 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str
     user: Optional[dict] = None
+
+class VerifyCodeRequest(BaseModel):
+    email: str
+    code: str
+
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+class ResetPasswordRequest(BaseModel):
+    email: str
+    code: str
+    new_password: str

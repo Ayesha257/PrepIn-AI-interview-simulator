@@ -28,8 +28,8 @@ app.add_middleware(
 app.include_router(auth_router, prefix="/api/auth", tags=["Auth"])
 app.include_router(resume_router, prefix="/api/resume", tags=["Resume"])
 app.include_router(analytics_router, prefix="/api/analytics", tags=["Analytics"])  
-app.include_router(report.router, prefix="/report", tags=["Report"])
 app.include_router(interview.router, prefix="/api/interview", tags=["Interview"])
+app.include_router(report.router, prefix="/api/report", tags=["Report"])
 
 @app.on_event("startup")
 async def startup():
@@ -40,15 +40,3 @@ async def startup():
 async def shutdown():
     await disconnect_db()
 
-
-@app.get("/")
-async def root():
-    return {
-        "message": "PrepIn API is running 🚀",
-        "version": "1.0.0"
-    }
-
-
-@app.get("/health")
-async def health():
-    return {"status": "ok"}
