@@ -98,50 +98,66 @@ export default function Interview() {
       return;
     }
 
-    const recognition = new SpeechRecognition();
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = "en-US";
+    isListeningRef.current = true;
+    setIsListening(true);
 
-    recognition.onresult = (event) => {
-      const transcript = Array.from(event.results)
-        .map((r) => r[0].transcript)
-        .join("");
-      setAnswer(transcript);
-    };
+    if (!recognitionRef.current) {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = "en-US";
 
-    recognition.onerror = (e) => {
-      if (e.error === "network") {
-        setTimeout(() => {
-          if (isListeningRef.current) startListening();
-        }, 500);
-      } else if (e.error === "no-speech" || e.error === "aborted") {
-        // ignore
-      } else {
+      recognition.onresult = (event) => {
+        const transcript = Array.from(event.results)
+          .map((r) => r[0].transcript)
+          .join("");
+        setAnswer(transcript);
+      };
+
+      recognition.onerror = (e) => {
+        if (e.error === "aborted" || e.error === "no-speech") return;
+        if (e.error === "network") {
+          setTimeout(() => {
+            if (isListeningRef.current) {
+              try {
+                recognitionRef.current?.start();
+              } catch {}
+            }
+          }, 500);
+          return;
+        }
         setError("Mic error: " + e.error);
         isListeningRef.current = false;
         setIsListening(false);
-      }
-    };
+      };
 
-    recognition.onend = () => {
-      if (isListeningRef.current) {
-        recognition.start(); // auto restart
-      } else {
-        setIsListening(false);
-      }
-    };
+      recognition.onend = () => {
+        if (isListeningRef.current) {
+          try {
+            recognitionRef.current?.start();
+          } catch {}
+        } else {
+          setIsListening(false);
+        }
+      };
 
-    recognitionRef.current = recognition;
-    recognition.start();
-    isListeningRef.current = true;
-    setIsListening(true);
+      recognitionRef.current = recognition;
+    }
+
+    try {
+      recognitionRef.current.start();
+    } catch (e) {
+      // Already started, ignore
+    }
   };
 
   const stopListening = () => {
     isListeningRef.current = false;
-    recognitionRef.current?.stop();
+    try {
+      recognitionRef.current?.stop();
+    } catch {}
     setIsListening(false);
+    // Don't null out recognitionRef — reuse it next time
   };
 
   const handleStart = async () => {
@@ -621,7 +637,11 @@ export default function Interview() {
 
               {/* Feedback options */}
               {!displayedFeedback && (
-                <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-3">
+                  <p className="text-white/70 text-sm text-center">
+                  Would you like feedback on your answer?
+                  </p>
+                  <div className="grid grid-cols-3 gap-3">
                   <motion.button
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.97 }}
@@ -653,6 +673,7 @@ export default function Interview() {
                   >
                     ⏭️ Skip
                   </motion.button>
+                </div>
                 </div>
               )}
 

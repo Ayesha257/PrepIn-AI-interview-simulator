@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { reportAPI } from "../services/api";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function Report() {
   const { sessionId } = useParams();
@@ -9,6 +9,7 @@ export default function Report() {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showReview, setShowReview] = useState(false);
 
   useEffect(() => {
     reportAPI
@@ -58,6 +59,7 @@ export default function Report() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-navy via-purple/40 to-navy px-4 py-10">
       <div className="max-w-2xl mx-auto space-y-6">
+
         {/* Header */}
         <div className="text-center">
           <h1 className="font-display text-3xl font-bold text-amber mb-1">
@@ -71,16 +73,12 @@ export default function Report() {
           <p className="text-blush/60 text-sm uppercase tracking-wider mb-2">
             Overall Score
           </p>
-          <p
-            className={`font-display text-7xl font-bold ${scoreColor(report.overall_score)}`}
-          >
+          <p className={`font-display text-7xl font-bold ${scoreColor(report.overall_score)}`}>
             {report.overall_score}
           </p>
           <p className="text-white/40 text-sm mt-1">/ 10</p>
-          <span
-            className={`inline-block mt-3 text-xs font-semibold px-4 py-1.5 rounded-full
-                           bg-purple/30 border border-purple/50 ${scoreColor(report.overall_score)}`}
-          >
+          <span className={`inline-block mt-3 text-xs font-semibold px-4 py-1.5 rounded-full
+                           bg-purple/30 border border-purple/50 ${scoreColor(report.overall_score)}`}>
             {scoreLabel(report.overall_score)}
           </span>
         </div>
@@ -97,20 +95,13 @@ export default function Report() {
           }`}
         >
           <div className="flex items-center gap-3">
-            <span className="text-2xl">
-              {report.ready_for_role ? "✅" : "🎯"}
-            </span>
             <div>
-              <p
-                className={`font-semibold text-sm ${report.ready_for_role ? "text-amber" : "text-blush"}`}
-              >
+              <p className={`font-semibold text-sm ${report.ready_for_role ? "text-amber" : "text-blush"}`}>
                 {report.ready_for_role
                   ? `Ready for ${report.target_role} role`
                   : `Not quite ready for ${report.target_role} yet`}
               </p>
-              <p className="text-blush/60 text-xs mt-0.5">
-                {report.readiness_note}
-              </p>
+              <p className="text-blush/60 text-xs mt-0.5">{report.readiness_note}</p>
             </div>
           </div>
         </motion.div>
@@ -118,21 +109,15 @@ export default function Report() {
         {/* Summary */}
         {report.summary && (
           <div className="bg-navy/60 border border-purple/40 rounded-2xl p-6">
-            <h2 className="text-white font-display text-lg font-semibold mb-3">
-              📋 Summary
-            </h2>
-            <p className="text-blush/70 text-sm leading-relaxed">
-              {report.summary}
-            </p>
+            <h2 className="text-white font-display text-lg font-semibold mb-3">📋 Summary</h2>
+            <p className="text-blush/70 text-sm leading-relaxed">{report.summary}</p>
           </div>
         )}
 
         {/* Strengths */}
         {report.strengths?.length > 0 && (
           <div className="bg-navy/60 border border-purple/40 rounded-2xl p-6">
-            <h2 className="text-white font-display text-lg font-semibold mb-4">
-              💪 Strengths
-            </h2>
+            <h2 className="text-white font-display text-lg font-semibold mb-4">Strengths</h2>
             <ul className="space-y-2">
               {report.strengths.map((s, i) => (
                 <li key={i} className="flex items-start gap-3">
@@ -147,9 +132,7 @@ export default function Report() {
         {/* Weak Areas */}
         {report.weak_areas?.length > 0 && (
           <div className="bg-navy/60 border border-purple/40 rounded-2xl p-6">
-            <h2 className="text-white font-display text-lg font-semibold mb-4">
-              ⚠️ Areas to Improve
-            </h2>
+            <h2 className="text-white font-display text-lg font-semibold mb-4">Areas to Improve</h2>
             <ul className="space-y-2">
               {report.weak_areas.map((w, i) => (
                 <li key={i} className="flex items-start gap-3">
@@ -164,9 +147,7 @@ export default function Report() {
         {/* Suggestions */}
         {report.suggestions?.length > 0 && (
           <div className="bg-navy/60 border border-purple/40 rounded-2xl p-6">
-            <h2 className="text-white font-display text-lg font-semibold mb-4">
-              🚀 Suggestions
-            </h2>
+            <h2 className="text-white font-display text-lg font-semibold mb-4">Suggestions</h2>
             <ul className="space-y-2">
               {report.suggestions.map((s, i) => (
                 <li key={i} className="flex items-start gap-3">
@@ -175,6 +156,72 @@ export default function Report() {
                 </li>
               ))}
             </ul>
+          </div>
+        )}
+
+        {/* Question Review Toggle */}
+        {report.questions?.filter(q => q.answer).length > 0 && (
+          <div className="bg-navy/60 border border-purple/40 rounded-2xl p-6">
+            <button
+              onClick={() => setShowReview(!showReview)}
+              className="w-full flex items-center justify-between"
+            >
+              <h2 className="text-white font-display text-lg font-semibold">
+                📝 Question Review
+              </h2>
+              <motion.span
+                animate={{ rotate: showReview ? 180 : 0 }}
+                transition={{ duration: 0.3 }}
+                className="text-blush/60 text-lg"
+              >
+                ↓
+              </motion.span>
+            </button>
+
+            <AnimatePresence>
+              {showReview && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="overflow-hidden"
+                >
+                  <div className="space-y-4 mt-4">
+                    {report.questions.filter(q => q.answer).map((q, i) => (
+                      <motion.div
+                        key={i}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.1 }}
+                        className="border border-purple/30 rounded-xl p-4 space-y-2"
+                      >
+                        <div className="flex items-center justify-between">
+                          <p className="text-blush/50 text-xs uppercase tracking-wider">
+                            Question {i + 1}
+                          </p>
+                          <span className={`text-xs font-bold px-2 py-1 rounded-full ${
+                            q.score >= 7 ? "bg-amber/20 text-amber" :
+                            q.score >= 4 ? "bg-blush/20 text-blush" :
+                            "bg-rose/20 text-rose"
+                          }`}>
+                            {q.score}/10
+                          </span>
+                        </div>
+                        <p className="text-white/80 text-sm font-medium">{q.question}</p>
+                        <p className="text-blush/50 text-xs">Your answer:</p>
+                        <p className="text-blush/70 text-sm italic">"{q.answer}"</p>
+                        {q.feedback && (
+                          <p className="text-blush/60 text-xs border-t border-purple/20 pt-2 mt-2">
+                            💬 {q.feedback}
+                          </p>
+                        )}
+                      </motion.div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         )}
 
@@ -195,6 +242,7 @@ export default function Report() {
             Dashboard
           </button>
         </div>
+
       </div>
     </div>
   );

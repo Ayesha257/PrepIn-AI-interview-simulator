@@ -10,10 +10,8 @@ _db = _client[os.getenv("DB_NAME", "interview_simulator")]
 
 async def fetch_resume_skills(user_id: str) -> dict:
     try:
-        doc = await _db.resumes.find_one(
-            {"user_id": ObjectId(user_id)},
-            sort=[("uploaded_at", -1)]
-        )
+        doc = await _db.resumes.find_one({"user_id": ObjectId(user_id)},
+                                         sort=[("uploaded_at", -1)])
         if doc:
             return {
                 "user_id": user_id,
