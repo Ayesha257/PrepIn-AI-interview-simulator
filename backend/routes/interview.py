@@ -23,7 +23,11 @@ async def create_session(
         "target_role": body.target_role,
         "seniority_level": body.seniority_level,
     }
+<<<<<<< HEAD
     result = db["sessions"].insert_one(session)
+=======
+    result = db.sessions.insert_one(session)   # ← await hataya
+>>>>>>> origin/main
     return {"session_id": str(result.inserted_id)}
 
 @router.get("/session/{session_id}")
