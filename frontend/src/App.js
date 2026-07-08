@@ -8,6 +8,7 @@ import Profile from "./pages/Profile";
 import Interview from "./pages/interview";
 import VerifyCode from "./pages/VerifyCode";
 import ResetPassword from "./pages/Resetpassword";
+import Report from "./pages/Report";
 
 // Protected route wrapper
 function PrivateRoute({ children }) {
@@ -40,6 +41,7 @@ function AppRoutes() {
       <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
       <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
       <Route path="/interview" element={<PrivateRoute><Interview /></PrivateRoute>} />
+      <Route path="/report/:sessionId" element={<PrivateRoute><Report /></PrivateRoute>} />
     </Routes>
   );
 }
