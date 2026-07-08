@@ -12,4 +12,9 @@ async def get_final_report(session_id: str, current_user: dict = Depends(get_cur
         raise HTTPException(status_code=404, detail="Report not found")
     report["_id"] = str(report["_id"])
     report["user_id"] = str(report["user_id"])
+    
+    session = db["sessions"].find_one({"_id": ObjectId(session_id)})
+    if session:
+        report["questions"] = session.get("questions", [])
+    
     return {"report": report}

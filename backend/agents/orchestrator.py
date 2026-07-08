@@ -149,7 +149,7 @@ async def start_interview(session_id: str):
     skills = resume_data["skills"]
     job_role = resume_data["job_role"]
 
-    first_question = generate_question(skills, job_role, "medium", [], False, None)
+    first_question = generate_question(skills, job_role, seniority_level, "medium", [], False, None)
 
     question_data = {
         "question": first_question,
