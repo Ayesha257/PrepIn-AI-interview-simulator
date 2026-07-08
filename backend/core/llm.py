@@ -5,3 +5,5 @@ import os
 load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+print("ENV PATH:", os.path.join(os.path.dirname(__file__), '..', '.env'))
+print("GROQ KEY:", os.getenv("GROQ_API_KEY"))
