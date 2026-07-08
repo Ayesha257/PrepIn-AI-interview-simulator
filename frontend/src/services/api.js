@@ -88,8 +88,11 @@ export const analyticsAPI = {
 
 // ──────────────── INTERVIEW ────────────────
 export const interviewAPI = {
-  createSession: () =>
-    apiFetch("/interview/session", { method: "POST" }),
+  createSession: (targetRole, seniorityLevel) =>
+    apiFetch("/interview/session", {
+      method: "POST",
+      body: JSON.stringify({ target_role: targetRole, seniority_level: seniorityLevel }),
+    }),
 
   startInterview: (sessionId) =>
     apiFetch(`/interview/start?session_id=${sessionId}`, { method: "POST" }),
@@ -101,4 +104,9 @@ export const interviewAPI = {
     ),
 
   getSession: (sessionId) => apiFetch(`/interview/session/${sessionId}`),
+};
+
+// ──────────────── REPORT ────────────────
+export const reportAPI = {
+  getReport: (sessionId) => apiFetch(`/report/report/${sessionId}`),
 };
