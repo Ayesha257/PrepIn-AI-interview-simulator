@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { motion, AnimatePresence, useMotionValue, useSpring } from "framer-motion";
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, Check, Sparkles, Brain, Zap } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { GoogleLogin } from "@react-oauth/google";
@@ -16,12 +16,12 @@ function NeuralBackground() {
     const ctx = canvas.getContext("2d");
     let raf;
     let w, h;
-    const NODE_COUNT = 46;
+    const NODE_COUNT = 40;
     let nodes = [];
 
     function resize() {
-      w = canvas.width = window.innerWidth;
-      h = canvas.height = window.innerHeight;
+      w = canvas.width = canvas.offsetWidth;
+      h = canvas.height = canvas.offsetHeight;
     }
     resize();
     window.addEventListener("resize", resize);
@@ -93,10 +93,11 @@ function NeuralBackground() {
   return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />;
 }
 
-// ---------- Cursor-reactive spotlight ----------
+// ---------- Cursor-reactive spotlight (desktop only, avoids mobile jank) ----------
 function CursorSpotlight() {
   const ref = useRef(null);
   useEffect(() => {
+    if (window.matchMedia("(hover: none)").matches) return; // skip on touch devices
     function onMove(e) {
       if (ref.current) {
         ref.current.style.setProperty("--x", `${e.clientX}px`);
@@ -110,7 +111,7 @@ function CursorSpotlight() {
   return (
     <div
       ref={ref}
-      className="pointer-events-none fixed inset-0 z-0"
+      className="pointer-events-none fixed inset-0 z-0 hidden sm:block"
       style={{
         background:
           "radial-gradient(600px circle at var(--x,50%) var(--y,50%), rgba(237,158,89,0.05), transparent 70%)",
@@ -148,9 +149,9 @@ function FloatingBadge({ icon: Icon, text, className, delay = 0, floatDelay = 0 
         animate={{ y: [0, -8, 0] }}
         transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: floatDelay }}
         className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04]
-                   backdrop-blur-md px-4 py-2 shadow-lg"
+                   backdrop-blur-md px-3.5 py-2 xl:px-4 shadow-lg"
       >
-        <Icon size={13} className="text-amber" />
+        <Icon size={13} className="text-amber flex-shrink-0" />
         <span className="text-[11px] text-blush/70 font-medium whitespace-nowrap">{text}</span>
       </motion.div>
     </motion.div>
@@ -161,7 +162,7 @@ function FloatingBadge({ icon: Icon, text, className, delay = 0, floatDelay = 0 
 function CinematicHeading() {
   const words = ["Ace", "your", "next", "interview."];
   return (
-    <h1 className="font-display text-5xl xl:text-6xl font-bold leading-[1.05] mb-4">
+    <h1 className="font-display text-4xl xl:text-5xl 2xl:text-6xl font-bold leading-[1.05] mb-4">
       {words.map((w, i) => (
         <motion.span
           key={i}
@@ -177,7 +178,7 @@ function CinematicHeading() {
   );
 }
 
-// ---------- Magnetic button ----------
+// ---------- Magnetic button (mouse-follow disabled on touch) ----------
 function MagneticButton({ children, className, disabled, ...props }) {
   const ref = useRef(null);
   const x = useMotionValue(0);
@@ -186,11 +187,12 @@ function MagneticButton({ children, className, disabled, ...props }) {
   const sy = useSpring(y, { stiffness: 300, damping: 20 });
 
   function onMove(e) {
+    if (window.matchMedia("(hover: none)").matches) return;
     const rect = ref.current.getBoundingClientRect();
     const relX = e.clientX - (rect.left + rect.width / 2);
     const relY = e.clientY - (rect.top + rect.height / 2);
-    x.set(relX * 0.15);
-    y.set(relY * 0.3);
+    x.set(relX * 0.12);
+    y.set(relY * 0.25);
   }
   function onLeave() {
     x.set(0);
@@ -233,7 +235,7 @@ function Field({ icon: Icon, label, type = "text", name, value, onChange, showTo
         className={`relative flex items-center rounded-xl border transition-colors duration-300
                    ${focused ? "border-white/[0.02] bg-white/[0.06]" : "border-white/10 bg-white/[0.03]"}`}
       >
-        <Icon size={16} className={`absolute left-4 transition-colors duration-300 ${focused ? "text-amber" : "text-blush/30"}`} />
+        <Icon size={16} className={`absolute left-4 transition-colors duration-300 flex-shrink-0 ${focused ? "text-amber" : "text-blush/30"}`} />
         <input
           type={showToggle ? (showValue ? "text" : "password") : type}
           name={name}
@@ -243,7 +245,7 @@ function Field({ icon: Icon, label, type = "text", name, value, onChange, showTo
           onBlur={() => setFocused(false)}
           placeholder=" "
           required
-          className="peer w-full bg-transparent text-white text-sm rounded-xl pl-11 pr-11 pt-5 pb-2 focus:outline-none"
+          className="peer w-full bg-transparent text-white text-sm rounded-xl pl-11 pr-11 pt-5 pb-2 focus:outline-none min-w-0"
         />
         <label
           className={`absolute left-11 transition-all duration-300 pointer-events-none
@@ -252,7 +254,7 @@ function Field({ icon: Icon, label, type = "text", name, value, onChange, showTo
           {label}
         </label>
         {showToggle && (
-          <button type="button" tabIndex={-1} onClick={onToggle} className="absolute right-4 text-blush/30 hover:text-blush/60 transition-colors duration-200">
+          <button type="button" tabIndex={-1} onClick={onToggle} className="absolute right-4 text-blush/30 hover:text-blush/60 transition-colors duration-200 flex-shrink-0">
             {showValue ? <EyeOff size={16} /> : <Eye size={16} />}
           </button>
         )}
@@ -282,7 +284,6 @@ export default function Login() {
   const [verifyLoading, setVerifyLoading] = useState(false);
   const [infoMsg, setInfoMsg] = useState("");
 
-  // 3D tilt for the floating panel
   const panelRef = useRef(null);
   const rx = useMotionValue(0);
   const ry = useMotionValue(0);
@@ -290,7 +291,7 @@ export default function Login() {
   const sry = useSpring(ry, { stiffness: 150, damping: 20 });
 
   function handlePanelMove(e) {
-    if (window.innerWidth < 1024 || !panelRef.current) return;
+    if (window.innerWidth < 1280 || window.matchMedia("(hover: none)").matches || !panelRef.current) return;
     const rect = panelRef.current.getBoundingClientRect();
     const px = (e.clientX - rect.left) / rect.width - 0.5;
     const py = (e.clientY - rect.top) / rect.height - 0.5;
@@ -375,22 +376,22 @@ export default function Login() {
   };
 
   return (
-    <div className="relative min-h-screen bg-[#05040a] overflow-hidden">
+    <div className="relative min-h-screen bg-[#05040a] overflow-x-hidden">
       <NeuralBackground />
       <CursorSpotlight />
       <ScanLine />
 
-      <div className="relative z-10 min-h-screen flex flex-col lg:flex-row">
-        {/* LEFT — cinematic storytelling */}
-        <div className="hidden lg:flex lg:w-[56%] relative items-center px-16 xl:px-24">
-          <div>
+      <div className="relative z-10 min-h-screen flex flex-col xl:flex-row">
+        {/* LEFT — cinematic storytelling (xl+ only, avoids cramped laptop overlap) */}
+        <div className="hidden xl:flex xl:w-[54%] relative items-center px-12 xl:px-16 2xl:px-24 py-10">
+          <div className="max-w-lg">
             <motion.div
               initial={{ opacity: 0, x: -12 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5 }}
               className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 py-1.5 mb-8"
             >
-              <Brain size={13} className="text-amber" />
+              <Brain size={13} className="text-amber flex-shrink-0" />
               <span className="text-[11px] text-blush/60 tracking-wide">AI-powered mock interviews</span>
             </motion.div>
 
@@ -406,15 +407,15 @@ export default function Login() {
             </motion.p>
           </div>
 
-          <FloatingBadge icon={Sparkles} text="Instant AI feedback" className="top-[15%] right-[4%]" delay={0.9} floatDelay={0} />
-          <FloatingBadge icon={Zap} text="5 tailored questions" className="top-[78%] left-[7%]" delay={1.05} floatDelay={1.2} />
-          <FloatingBadge icon={Check} text="Resume-aware scoring" className="top-[90%] right-[3%]" delay={1.2} floatDelay={0.6} />
-          </div>
+          <FloatingBadge icon={Sparkles} text="Instant AI feedback" className="top-[12%] right-[4%]" delay={0.9} floatDelay={0} />
+          <FloatingBadge icon={Zap} text="5 tailored questions" className="bottom-[16%] left-[6%]" delay={1.05} floatDelay={1.2} />
+          <FloatingBadge icon={Check} text="Resume-aware scoring" className="bottom-[5%] right-[3%]" delay={1.2} floatDelay={0.6} />
+        </div>
 
-        {/* RIGHT — floating offset glass panel */}
-        <div className="flex-1 flex items-center justify-center lg:justify-end px-4 lg:pr-16 xl:pr-24 py-10">
-          <div className="w-full max-w-[420px] lg:mt-[-3vh]" style={{ perspective: 1200 }}>
-            <div className="lg:hidden text-center mb-6">
+        {/* RIGHT — floating glass panel (centered up to xl, offset on xl+) */}
+        <div className="flex-1 flex items-center justify-center xl:justify-end px-4 sm:px-6 xl:pr-16 2xl:pr-24 py-8 sm:py-10">
+          <div className="w-full max-w-[420px] xl:mt-[-3vh]" style={{ perspective: 1200 }}>
+            <div className="xl:hidden text-center mb-6">
               <h1 className="font-display text-3xl font-bold text-amber tracking-tight">PrepIn</h1>
               <p className="text-blush/50 mt-1 text-sm">AI Interview Simulator</p>
             </div>
@@ -428,9 +429,9 @@ export default function Login() {
               transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
               style={{ rotateX: srx, rotateY: sry, transformStyle: "preserve-3d" }}
               className="relative rounded-3xl border border-white/10 bg-white/[0.045] backdrop-blur-2xl
-                         shadow-[0_20px_60px_rgba(0,0,0,0.5)] p-8"
+                         shadow-[0_20px_60px_rgba(0,0,0,0.5)] p-6 sm:p-8"
             >
-              <div className="hidden lg:block mb-6">
+              <div className="hidden xl:block mb-6">
                 <p className="text-blush/40 text-xs uppercase tracking-[0.2em] mb-1">Welcome back</p>
                 <h2 className="text-white font-display text-2xl font-semibold">Sign in to PrepIn</h2>
               </div>
@@ -438,8 +439,8 @@ export default function Login() {
               <AnimatePresence mode="wait">
                 {needsVerification ? (
                   <motion.div key="verify" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }} transition={{ duration: 0.3 }}>
-                    <h2 className="lg:hidden text-white font-display text-xl font-semibold mb-2">Verify your email</h2>
-                    <p className="text-blush/50 text-sm mb-6">
+                    <h2 className="xl:hidden text-white font-display text-xl font-semibold mb-2">Verify your email</h2>
+                    <p className="text-blush/50 text-sm mb-6 break-words">
                       Enter the 6-digit code sent to <span className="text-blush/80">{form.email}</span>
                     </p>
 
@@ -463,13 +464,13 @@ export default function Login() {
                     )}
 
                     <form onSubmit={handleVerifyCode} className="space-y-5">
-                      <div className="flex justify-center gap-2">
+                      <div className="flex justify-center gap-1.5 sm:gap-2">
                         {[0, 1, 2, 3, 4, 5].map((i) => (
                           <motion.div
                             key={i}
                             animate={code[i] ? { scale: [1, 1.15, 1] } : {}}
                             transition={{ duration: 0.2 }}
-                            className={`w-11 h-12 rounded-xl border flex items-center justify-center text-lg font-semibold transition-colors duration-200 ${
+                            className={`w-9 h-11 sm:w-11 sm:h-12 rounded-xl border flex items-center justify-center text-base sm:text-lg font-semibold transition-colors duration-200 ${
                               code[i] ? "border-amber/60 bg-amber/10 text-amber" : "border-white/10 bg-white/[0.03] text-blush/20"
                             }`}
                           >
@@ -557,8 +558,10 @@ export default function Login() {
                       <div className="flex-1 h-px bg-white/10" />
                     </div>
 
-                    <motion.div whileHover={{ scale: 1.02 }} className="flex justify-center">
-                      <GoogleLogin onSuccess={handleGoogleSuccess} onError={() => setError("Google login failed")} />
+                    <motion.div whileHover={{ scale: 1.02 }} className="flex justify-center w-full overflow-hidden">
+                      <div className="max-w-full">
+                        <GoogleLogin onSuccess={handleGoogleSuccess} onError={() => setError("Google login failed")} />
+                      </div>
                     </motion.div>
 
                     <p className="text-center text-blush/50 text-sm mt-6">
