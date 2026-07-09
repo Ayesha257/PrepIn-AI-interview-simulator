@@ -14,12 +14,12 @@ function NeuralBackground() {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
     let raf, w, h;
-    const NODE_COUNT = 46;
+    const NODE_COUNT = 40;
     let nodes = [];
 
     function resize() {
-      w = canvas.width = window.innerWidth;
-      h = canvas.height = window.innerHeight;
+      w = canvas.width = canvas.offsetWidth;
+      h = canvas.height = canvas.offsetHeight;
     }
     resize();
     window.addEventListener("resize", resize);
@@ -89,6 +89,7 @@ function NeuralBackground() {
 function CursorSpotlight() {
   const ref = useRef(null);
   useEffect(() => {
+    if (window.matchMedia("(hover: none)").matches) return;
     function onMove(e) {
       if (ref.current) {
         ref.current.style.setProperty("--x", `${e.clientX}px`);
@@ -102,7 +103,7 @@ function CursorSpotlight() {
   return (
     <div
       ref={ref}
-      className="pointer-events-none fixed inset-0 z-0"
+      className="pointer-events-none fixed inset-0 z-0 hidden sm:block"
       style={{ background: "radial-gradient(600px circle at var(--x,50%) var(--y,50%), rgba(237,158,89,0.05), transparent 70%)" }}
     />
   );
@@ -126,9 +127,9 @@ function FloatingBadge({ icon: Icon, text, className, delay = 0, floatDelay = 0 
       <motion.div
         animate={{ y: [0, -8, 0] }}
         transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: floatDelay }}
-        className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] backdrop-blur-md px-4 py-2 shadow-lg"
+        className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] backdrop-blur-md px-3.5 py-2 xl:px-4 shadow-lg"
       >
-        <Icon size={13} className="text-amber" />
+        <Icon size={13} className="text-amber flex-shrink-0" />
         <span className="text-[11px] text-blush/70 font-medium whitespace-nowrap">{text}</span>
       </motion.div>
     </motion.div>
@@ -138,7 +139,7 @@ function FloatingBadge({ icon: Icon, text, className, delay = 0, floatDelay = 0 
 function CinematicHeading() {
   const words = ["Initialize", "your", "AI", "career", "identity."];
   return (
-    <h1 className="font-display text-4xl xl:text-5xl font-bold leading-[1.1] mb-4">
+    <h1 className="font-display text-3xl xl:text-4xl 2xl:text-5xl font-bold leading-[1.1] mb-4">
       {words.map((w, i) => (
         <motion.span
           key={i}
@@ -163,9 +164,10 @@ function MagneticButton({ children, className, disabled, ...props }) {
   const [ripples, setRipples] = useState([]);
 
   function onMove(e) {
+    if (window.matchMedia("(hover: none)").matches) return;
     const rect = ref.current.getBoundingClientRect();
-    x.set((e.clientX - (rect.left + rect.width / 2)) * 0.15);
-    y.set((e.clientY - (rect.top + rect.height / 2)) * 0.3);
+    x.set((e.clientX - (rect.left + rect.width / 2)) * 0.12);
+    y.set((e.clientY - (rect.top + rect.height / 2)) * 0.25);
   }
   function onLeave() {
     x.set(0);
@@ -220,7 +222,7 @@ function Field({ icon: Icon, label, type = "text", name, value, onChange, showTo
         }}
       />
       <div className={`relative flex items-center rounded-xl border transition-colors duration-300 ${focused ? "border-white/[0.02] bg-white/[0.06]" : "border-white/10 bg-white/[0.03]"}`}>
-        <Icon size={16} className={`absolute left-4 transition-colors duration-300 ${focused ? "text-amber" : "text-blush/30"}`} />
+        <Icon size={16} className={`absolute left-4 transition-colors duration-300 flex-shrink-0 ${focused ? "text-amber" : "text-blush/30"}`} />
         <input
           type={showToggle ? (showValue ? "text" : "password") : type}
           name={name}
@@ -230,14 +232,14 @@ function Field({ icon: Icon, label, type = "text", name, value, onChange, showTo
           onBlur={() => setFocused(false)}
           placeholder=" "
           required
-          className="peer w-full bg-transparent text-white text-sm rounded-xl pl-11 pr-11 pt-5 pb-2 focus:outline-none"
+          className="peer w-full bg-transparent text-white text-sm rounded-xl pl-11 pr-11 pt-5 pb-2 focus:outline-none min-w-0"
         />
         <label className={`absolute left-11 transition-all duration-300 pointer-events-none ${focused || hasValue ? "top-1.5 text-[10px] text-amber/80 font-medium tracking-wide" : "top-1/2 -translate-y-1/2 text-sm text-blush/40"}`}>
           {label}
         </label>
         {rightSlot}
         {showToggle && (
-          <button type="button" tabIndex={-1} onClick={onToggle} className="absolute right-4 text-blush/30 hover:text-blush/60 transition-colors duration-200">
+          <button type="button" tabIndex={-1} onClick={onToggle} className="absolute right-4 text-blush/30 hover:text-blush/60 transition-colors duration-200 flex-shrink-0">
             {showValue ? <EyeOff size={16} /> : <Eye size={16} />}
           </button>
         )}
@@ -247,19 +249,6 @@ function Field({ icon: Icon, label, type = "text", name, value, onChange, showTo
   );
 }
 
-function CornerBrackets() {
-  const base = "absolute w-5 h-5 border-amber/30";
-  return (
-    <>
-      <span className={`${base} top-3 left-3 border-t-2 border-l-2 rounded-tl-lg`} />
-      <span className={`${base} top-3 right-3 border-t-2 border-r-2 rounded-tr-lg`} />
-      <span className={`${base} bottom-3 left-3 border-b-2 border-l-2 rounded-bl-lg`} />
-      <span className={`${base} bottom-3 right-3 border-b-2 border-r-2 rounded-br-lg`} />
-    </>
-  );
-}
-
-// ---------- Identity progress ring ----------
 function IdentityRing({ pct, size = 46 }) {
   const radius = (size - 6) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -289,7 +278,6 @@ function IdentityRing({ pct, size = 46 }) {
   );
 }
 
-// ---------- Password strength meter ----------
 function getPasswordChecks(pw) {
   return {
     length: pw.length >= 6,
@@ -312,18 +300,11 @@ function PasswordStrength({ password }) {
       <div className="flex gap-1.5 mt-2 mb-2">
         {[0, 1, 2, 3].map((i) => (
           <div key={i} className="h-1 flex-1 rounded-full bg-white/10 overflow-hidden">
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: i < score ? "100%" : "0%" }}
-              transition={{ duration: 0.3 }}
-              className={`h-full ${colors[score]}`}
-            />
+            <motion.div initial={{ width: 0 }} animate={{ width: i < score ? "100%" : "0%" }} transition={{ duration: 0.3 }} className={`h-full ${colors[score]}`} />
           </div>
         ))}
       </div>
-      <p className={`text-[11px] mb-2 ${score <= 1 ? "text-red-300" : score <= 2 ? "text-amber-300" : "text-emerald-300"}`}>
-        {labels[score]}
-      </p>
+      <p className={`text-[11px] mb-2 ${score <= 1 ? "text-red-300" : score <= 2 ? "text-amber-300" : "text-emerald-300"}`}>{labels[score]}</p>
       <div className="flex flex-wrap gap-x-4 gap-y-1">
         {[
           { key: "length", label: "6+ characters" },
@@ -359,7 +340,7 @@ export default function Register() {
   const sry = useSpring(ry, { stiffness: 150, damping: 20 });
 
   function handlePanelMove(e) {
-    if (window.innerWidth < 1024 || !panelRef.current) return;
+    if (window.innerWidth < 1280 || window.matchMedia("(hover: none)").matches || !panelRef.current) return;
     const rect = panelRef.current.getBoundingClientRect();
     const px = (e.clientX - rect.left) / rect.width - 0.5;
     const py = (e.clientY - rect.top) / rect.height - 0.5;
@@ -409,22 +390,22 @@ export default function Register() {
   };
 
   return (
-    <div className="relative min-h-screen bg-[#05040a] overflow-hidden">
+    <div className="relative min-h-screen bg-[#05040a] overflow-x-hidden">
       <NeuralBackground />
       <CursorSpotlight />
       <ScanLine />
 
-      <div className="relative z-10 min-h-screen flex flex-col lg:flex-row">
-        {/* LEFT — cinematic AI onboarding storytelling */}
-        <div className="hidden lg:flex lg:w-[52%] relative items-center px-16 xl:px-24">
-          <div>
+      <div className="relative z-10 min-h-screen flex flex-col xl:flex-row">
+        {/* LEFT — cinematic AI onboarding storytelling (xl+ only) */}
+        <div className="hidden xl:flex xl:w-[50%] relative items-center px-12 xl:px-16 2xl:px-24 py-10">
+          <div className="max-w-lg">
             <motion.div
               initial={{ opacity: 0, x: -12 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5 }}
               className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 py-1.5 mb-8"
             >
-              <Brain size={13} className="text-amber" />
+              <Brain size={13} className="text-amber flex-shrink-0" />
               <span className="text-[11px] text-blush/60 tracking-wide">Preparing your interview intelligence…</span>
             </motion.div>
 
@@ -435,15 +416,15 @@ export default function Register() {
             </motion.p>
           </div>
 
-          <FloatingBadge icon={Sparkles} text="Resume-aware questions" className="top-[16%] right-[4%]" delay={0.9} floatDelay={0} />
-          <FloatingBadge icon={TrendingUp} text="Track your progress" className="top-[78%] left-[5%]" delay={1.05} floatDelay={1.2} />
-          <FloatingBadge icon={Check} text="Free to get started" className="top-[85%] right-[4%]" delay={1.2} floatDelay={0.6} />
+          <FloatingBadge icon={Sparkles} text="Resume-aware questions" className="top-[12%] right-[4%]" delay={0.9} floatDelay={0} />
+          <FloatingBadge icon={TrendingUp} text="Track your progress" className="bottom-[18%] left-[6%]" delay={1.05} floatDelay={1.2} />
+          <FloatingBadge icon={Check} text="Free to get started" className="bottom-[5%] right-[3%]" delay={1.2} floatDelay={0.6} />
         </div>
 
         {/* RIGHT — floating offset onboarding panel */}
-        <div className="flex-1 flex items-center justify-center lg:justify-end px-4 lg:pr-16 xl:pr-24 py-10">
-          <div className="w-full max-w-[440px] lg:mt-[-2vh]" style={{ perspective: 1200 }}>
-            <div className="lg:hidden text-center mb-6">
+        <div className="flex-1 flex items-center justify-center xl:justify-end px-4 sm:px-6 xl:pr-16 2xl:pr-24 py-8 sm:py-10">
+          <div className="w-full max-w-[440px] xl:mt-[-2vh]" style={{ perspective: 1200 }}>
+            <div className="xl:hidden text-center mb-6">
               <h1 className="font-display text-3xl font-bold text-amber tracking-tight">PrepIn</h1>
               <p className="text-blush/50 mt-1 text-sm">Start your interview prep journey</p>
             </div>
@@ -456,21 +437,20 @@ export default function Register() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
               style={{ rotateX: srx, rotateY: sry, transformStyle: "preserve-3d" }}
-              className="relative rounded-3xl border border-white/10 bg-white/[0.045] backdrop-blur-2xl shadow-[0_20px_60px_rgba(0,0,0,0.5)] p-8"
+              className="relative rounded-3xl border border-white/10 bg-white/[0.045] backdrop-blur-2xl shadow-[0_20px_60px_rgba(0,0,0,0.5)] p-6 sm:p-8"
             >
-              <CornerBrackets />
 
-              <div className="hidden lg:flex items-center justify-between mb-6">
-                <div>
+              <div className="hidden xl:flex items-center justify-between mb-6 gap-3">
+                <div className="min-w-0">
                   <p className="text-blush/40 text-xs uppercase tracking-[0.2em] mb-1">Create identity</p>
                   <h2 className="text-white font-display text-2xl font-semibold">Sign up for PrepIn</h2>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-shrink-0">
                   <IdentityRing pct={identityPct} />
                 </div>
               </div>
 
-              <div className="lg:hidden flex items-center justify-between mb-4">
+              <div className="xl:hidden flex items-center justify-between mb-4">
                 <p className="text-blush/50 text-xs">Identity created</p>
                 <IdentityRing pct={identityPct} size={38} />
               </div>
@@ -521,7 +501,7 @@ export default function Register() {
                     onToggle={() => setShowConfirm((v) => !v)}
                     rightSlot={
                       confirmMatch !== null && (
-                        <span className={`absolute right-11 ${confirmMatch ? "text-emerald-400" : "text-red-400"}`}>
+                        <span className={`absolute right-11 flex-shrink-0 ${confirmMatch ? "text-emerald-400" : "text-red-400"}`}>
                           {confirmMatch ? <Check size={14} /> : <X size={14} />}
                         </span>
                       )
