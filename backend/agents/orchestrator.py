@@ -70,47 +70,12 @@ async def orchestrate_workflow(session_id: str, user_answer: str):
             f"questions.{question_count - 1}.feedback": feedback,
         }}
     )
-<<<<<<< HEAD
-    
-    should_end, reason = should_end_interview(session["questions"], question_count)
-    
-    if should_end:
-        session = db["sessions"].find_one(ObjectId(session_id))
-        questions = session.get("questions", [])
-        scores = [q["score"] for q in questions if q.get("score") is not None]
-        overall_score = round(sum(scores) / len(scores), 2) if scores else 0.0
-        report_data = run_report_agent(session)
-        
-        report_doc = {
-        "session_id": session_id,
-        "user_id": session["user_id"],
-        "overall_score": overall_score,
-        "target_role": session.get("target_role"),
-        "seniority_level": session.get("seniority_level"),
-        "strengths": report_data["strengths"],
-        "weak_areas": report_data["weak_areas"],
-        "suggestions": report_data["suggestions"],
-        "summary": report_data["summary"],
-        "end_reason": reason,
-        "created_at": datetime.utcnow()
-        }
-        
-        report_result = db["reports"].insert_one(report_doc)
-        report_id = str(report_result.inserted_id)
-        
-        db["sessions"].update_one(
-            {"_id": ObjectId(session_id)},
-            {"$set": {"status": "completed", "ended_at": datetime.utcnow(), "final_report_id": report_id}}
-            )
-        
-=======
 
     if question_count >= 5:
         db["sessions"].update_one(
             {"_id": ObjectId(session_id)},
             {"$set": {"status": "completed", "ended_at": datetime.utcnow()}}
         )
->>>>>>> origin/main
         next_question = None
         status = "completed"
 
@@ -123,11 +88,7 @@ async def orchestrate_workflow(session_id: str, user_answer: str):
         if signal == "loop_back":
             next_question = generate_question(skills, job_role, seniority_level, difficulty, previous_questions, True, user_answer)
         else:
-<<<<<<< HEAD
-            next_question = generate_question(skills, job_role, seniority_level, difficulty, previous_questions, False, user_answer)
-=======
             next_question = generate_question(skills, job_role, difficulty, previous_questions, False, user_answer)
->>>>>>> origin/main
 
         # FIX: actually save the next question so it can be matched correctly next time
         next_question_data = {

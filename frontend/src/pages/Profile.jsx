@@ -1,7 +1,220 @@
 // src/pages/Profile.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence, useMotionValue, useSpring } from "framer-motion";
+import {
+  User,
+  Briefcase,
+  CalendarDays,
+  Plus,
+  X,
+  LogOut,
+  Sparkles,
+  Loader2,
+  Check,
+} from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { authAPI, resumeAPI } from "../services/api";
+
+// ---------- Neural network canvas background (quieter than the login hero) ----------
+function NeuralBackground() {
+  const canvasRef = useRef(null);
+  const mouseRef = useRef({ x: -9999, y: -9999 });
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    let raf;
+    let w, h;
+    const NODE_COUNT = 22;
+    let nodes = [];
+
+    function resize() {
+      w = canvas.width = canvas.offsetWidth;
+      h = canvas.height = canvas.offsetHeight;
+    }
+    resize();
+    window.addEventListener("resize", resize);
+
+    nodes = Array.from({ length: NODE_COUNT }, () => ({
+      x: Math.random() * w,
+      y: Math.random() * h,
+      vx: (Math.random() - 0.5) * 0.2,
+      vy: (Math.random() - 0.5) * 0.2,
+      r: Math.random() * 1.4 + 0.7,
+    }));
+
+    function onMove(e) {
+      mouseRef.current = { x: e.clientX, y: e.clientY };
+    }
+    window.addEventListener("mousemove", onMove);
+
+    function tick() {
+      ctx.clearRect(0, 0, w, h);
+
+      for (const n of nodes) {
+        n.x += n.vx;
+        n.y += n.vy;
+        if (n.x < 0 || n.x > w) n.vx *= -1;
+        if (n.y < 0 || n.y > h) n.vy *= -1;
+
+        const dx = mouseRef.current.x - n.x;
+        const dy = mouseRef.current.y - n.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist < 110) {
+          n.x -= dx * 0.003;
+          n.y -= dy * 0.003;
+        }
+      }
+
+      for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+          const a = nodes[i], b = nodes[j];
+          const d = Math.hypot(a.x - b.x, a.y - b.y);
+          if (d < 120) {
+            ctx.strokeStyle = `rgba(237,158,89,${0.08 * (1 - d / 120)})`;
+            ctx.lineWidth = 0.6;
+            ctx.beginPath();
+            ctx.moveTo(a.x, a.y);
+            ctx.lineTo(b.x, b.y);
+            ctx.stroke();
+          }
+        }
+      }
+
+      for (const n of nodes) {
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(233,140,185,0.35)";
+        ctx.fill();
+      }
+
+      raf = requestAnimationFrame(tick);
+    }
+    tick();
+
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", resize);
+      window.removeEventListener("mousemove", onMove);
+    };
+  }, []);
+
+  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />;
+}
+
+// ---------- Cursor-reactive spotlight (desktop only) ----------
+function CursorSpotlight() {
+  const ref = useRef(null);
+  useEffect(() => {
+    if (window.matchMedia("(hover: none)").matches) return;
+    function onMove(e) {
+      if (ref.current) {
+        ref.current.style.setProperty("--x", `${e.clientX}px`);
+        ref.current.style.setProperty("--y", `${e.clientY}px`);
+      }
+    }
+    window.addEventListener("mousemove", onMove);
+    return () => window.removeEventListener("mousemove", onMove);
+  }, []);
+
+  return (
+    <div
+      ref={ref}
+      className="pointer-events-none fixed inset-0 z-0 hidden sm:block"
+      style={{
+        background:
+          "radial-gradient(600px circle at var(--x,50%) var(--y,50%), rgba(237,158,89,0.05), transparent 70%)",
+      }}
+    />
+  );
+}
+
+// ---------- Magnetic button (mouse-follow disabled on touch) ----------
+function MagneticButton({ children, className, disabled, ...props }) {
+  const ref = useRef(null);
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const sx = useSpring(x, { stiffness: 300, damping: 20 });
+  const sy = useSpring(y, { stiffness: 300, damping: 20 });
+
+  function onMove(e) {
+    if (window.matchMedia("(hover: none)").matches) return;
+    const rect = ref.current.getBoundingClientRect();
+    const relX = e.clientX - (rect.left + rect.width / 2);
+    const relY = e.clientY - (rect.top + rect.height / 2);
+    x.set(relX * 0.08);
+    y.set(relY * 0.2);
+  }
+  function onLeave() {
+    x.set(0);
+    y.set(0);
+  }
+
+  return (
+    <motion.button
+      ref={ref}
+      onMouseMove={onMove}
+      onMouseLeave={onLeave}
+      style={{ x: sx, y: sy }}
+      whileTap={{ scale: 0.97 }}
+      disabled={disabled}
+      className={className}
+      {...props}
+    >
+      {children}
+    </motion.button>
+  );
+}
+
+// ---------- Premium floating-label field (shared visual language with Login) ----------
+function ProfileField({ icon: Icon, label, type = "text", name, value, onChange, placeholder, min, max }) {
+  const [focused, setFocused] = useState(false);
+  const hasValue = value !== "" && value !== null && value !== undefined;
+
+  return (
+    <div className="relative rounded-xl p-[1px] overflow-hidden">
+      <div
+        className="absolute inset-0 opacity-0 transition-opacity duration-500"
+        style={{
+          opacity: focused ? 1 : 0,
+          background: "linear-gradient(90deg, transparent, rgba(237,158,89,0.6), transparent)",
+          backgroundSize: "200% 100%",
+          animation: focused ? "shimmerSlideProfile 2.5s linear infinite" : "none",
+        }}
+      />
+      <div
+        className={`relative flex items-center rounded-xl border transition-colors duration-300
+                   ${focused ? "border-white/[0.02] bg-white/[0.06]" : "border-white/10 bg-white/[0.03]"}`}
+      >
+        <Icon size={16} className={`absolute left-4 transition-colors duration-300 flex-shrink-0 ${focused ? "text-amber" : "text-blush/30"}`} />
+        <input
+          type={type}
+          name={name}
+          value={value}
+          onChange={onChange}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          placeholder=" "
+          min={min}
+          max={max}
+          className="peer w-full bg-transparent text-white text-sm rounded-xl pl-11 pr-4 pt-5 pb-2 focus:outline-none min-w-0"
+        />
+        <label
+          className={`absolute left-11 transition-all duration-300 pointer-events-none
+                     ${focused || hasValue ? "top-1.5 text-[10px] text-amber/80 font-medium tracking-wide" : "top-1/2 -translate-y-1/2 text-sm text-blush/40"}`}
+        >
+          {label}
+        </label>
+      </div>
+      <style>{`
+        @keyframes shimmerSlideProfile {
+          0% { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
+        }
+      `}</style>
+    </div>
+  );
+}
 
 export default function Profile() {
   const { user, logout } = useAuth();
@@ -14,24 +227,20 @@ export default function Profile() {
   const [skills, setSkills] = useState(user?.profile?.skills || []);
   const [newSkill, setNewSkill] = useState("");
 
-  const [resumeSource, setResumeSource] = useState(null); // filename, for the "filled from" note
+  const [resumeSource, setResumeSource] = useState(null);
   const [loadingResume, setLoadingResume] = useState(true);
 
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
-
     resumeAPI
       .getMyResumes()
       .then((data) => {
         if (!data.resumes || data.resumes.length === 0) return;
         const latest = data.resumes[0];
 
-        // Only auto-fill fields the user hasn't already set themselves
         setForm((prev) => ({
           ...prev,
           target_role: prev.target_role || latest.job_role || "",
@@ -42,7 +251,7 @@ export default function Profile() {
         }));
 
         setSkills((prev) => {
-          if (prev.length > 0) return prev; // don't overwrite existing skills
+          if (prev.length > 0) return prev;
           return latest.skills || [];
         });
 
@@ -76,6 +285,7 @@ export default function Profile() {
     e.preventDefault();
     setSaving(true);
     setError("");
+    setSuccess("");
     try {
       await authAPI.updateProfile({
         name: form.name,
@@ -87,7 +297,7 @@ export default function Profile() {
           skills: skills,
         },
       });
-      setSuccess("Profile updated!");
+      setSuccess("Profile updated");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -96,138 +306,152 @@ export default function Profile() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-navy via-purple/40 to-navy">
+    <div className="relative min-h-screen bg-[#05040a] overflow-x-hidden">
+      <NeuralBackground />
+      <CursorSpotlight />
+
       {/* Navbar */}
-      <nav className="border-b border-purple/30 bg-navy/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-2xl mx-auto px-6 py-4 flex items-center justify-between">
-          <span className="font-display text-2xl font-bold text-amber">PrepIn</span>
-          <button onClick={logout} className="text-blush/60 hover:text-blush text-sm transition">
-            Sign out
+      <nav className="relative z-10 border-b border-white/10 bg-white/[0.03] backdrop-blur-md sticky top-0">
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+          <span className="font-display text-xl sm:text-2xl font-bold text-amber tracking-tight">PrepIn</span>
+          <button
+            onClick={logout}
+            className="flex items-center gap-1.5 text-blush/60 hover:text-blush text-xs sm:text-sm transition-colors duration-200"
+          >
+            <LogOut size={14} className="flex-shrink-0" />
+            <span className="hidden xs:inline sm:inline">Sign out</span>
           </button>
         </div>
       </nav>
 
-      <main className="max-w-2xl mx-auto px-6 py-8">
-        <div
-          className={`transition-all duration-700 ${
-            mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-          }`}
+      <main className="relative z-10 max-w-2xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="mb-6 sm:mb-8"
         >
-          <h1 className="font-display text-3xl font-bold text-white mb-2">Profile</h1>
-          <p className="text-blush/60 text-sm mb-2">{user?.email}</p>
+          <p className="text-blush/40 text-xs uppercase tracking-[0.2em] mb-1.5">Your account</p>
+          <h1 className="font-display text-2xl sm:text-3xl font-bold text-white mb-2">Profile</h1>
+          <p className="text-blush/50 text-sm break-all sm:break-normal mb-3">{user?.email}</p>
 
-          {!loadingResume && resumeSource && (
-            <p className="text-blush/40 text-xs mb-6 flex items-center gap-1.5">
-              <span className="text-amber">✨</span>
-              Pre-filled from <span className="text-blush/70">{resumeSource}</span> — review and edit below
-            </p>
-          )}
-          {!loadingResume && !resumeSource && (
-            <p className="text-blush/40 text-xs mb-6">
-              Upload a resume to auto-fill this profile.
-            </p>
-          )}
-          {loadingResume && (
-            <p className="text-blush/30 text-xs mb-6 animate-pulse">Loading your resume data...</p>
-          )}
-        </div>
+          <AnimatePresence mode="wait">
+            {loadingResume ? (
+              <motion.p key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-blush/30 text-xs">
+                Loading your resume data…
+              </motion.p>
+            ) : resumeSource ? (
+              <motion.p
+                key="source"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="text-blush/40 text-xs flex items-center gap-1.5 flex-wrap"
+              >
+                <Sparkles size={12} className="text-amber flex-shrink-0" />
+                Pre-filled from <span className="text-blush/70 break-all">{resumeSource}</span> — review and edit below
+              </motion.p>
+            ) : (
+              <motion.p key="none" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-blush/40 text-xs">
+                Upload a resume to auto-fill this profile.
+              </motion.p>
+            )}
+          </AnimatePresence>
+        </motion.div>
 
-        <div
-          className={`bg-navy/60 border border-purple/40 rounded-2xl p-8 transition-all duration-700 delay-150 ${
-            mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-          }`}
+        {/* Glass card */}
+        <motion.div
+          initial={{ opacity: 0, y: 24, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1], delay: 0.15 }}
+          className="relative rounded-3xl border border-white/10 bg-white/[0.045] backdrop-blur-2xl
+                     shadow-[0_20px_60px_rgba(0,0,0,0.5)] p-5 sm:p-8"
         >
-          {success && (
-            <div className="bg-amber/10 border border-amber/40 text-amber text-sm rounded-lg px-4 py-3 mb-6 animate-[fadeIn_0.3s_ease]">
-              ✓ {success}
-            </div>
-          )}
-          {error && (
-            <div className="bg-rose/20 border border-rose/40 text-blush text-sm rounded-lg px-4 py-3 mb-6">
-              {error}
-            </div>
-          )}
+          <AnimatePresence>
+            {success && (
+              <motion.div
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="flex items-center gap-2 bg-amber/10 border border-amber/30 text-amber text-sm rounded-xl px-4 py-3 mb-5"
+              >
+                <Check size={15} className="flex-shrink-0" /> {success}
+              </motion.div>
+            )}
+            {error && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1, x: [0, -6, 6, -4, 4, 0] }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.4 }}
+                className="bg-red-500/10 border border-red-500/20 text-red-300 text-sm rounded-xl px-4 py-3 mb-5"
+              >
+                {error}
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <form onSubmit={handleSave} className="space-y-5">
-            <div>
-              <label className="block text-blush/80 text-sm mb-1.5">Full Name</label>
-              <input
-                type="text"
-                name="name"
-                value={form.name}
+            <ProfileField icon={User} label="Full name" name="name" value={form.name} onChange={handleChange} />
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <ProfileField
+                icon={Briefcase}
+                label="Target role"
+                name="target_role"
+                value={form.target_role}
                 onChange={handleChange}
-                className="w-full bg-purple/30 border border-purple/50 text-white placeholder-blush/30
-                           rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-amber
-                           focus:ring-1 focus:ring-amber/50 transition"
+                placeholder="e.g. Backend Engineer"
+              />
+              <ProfileField
+                icon={CalendarDays}
+                label="Years of experience"
+                type="number"
+                name="years_of_experience"
+                value={form.years_of_experience}
+                onChange={handleChange}
+                min="0"
+                max="50"
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-blush/80 text-sm mb-1.5">Target Role</label>
-                <input
-                  type="text"
-                  name="target_role"
-                  value={form.target_role}
-                  onChange={handleChange}
-                  placeholder="e.g. Backend Engineer"
-                  className="w-full bg-purple/30 border border-purple/50 text-white placeholder-blush/30
-                             rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-amber
-                             focus:ring-1 focus:ring-amber/50 transition"
-                />
-              </div>
-
-              <div>
-                <label className="block text-blush/80 text-sm mb-1.5">Years of Experience</label>
-                <input
-                  type="number"
-                  name="years_of_experience"
-                  value={form.years_of_experience}
-                  onChange={handleChange}
-                  min="0"
-                  max="50"
-                  placeholder="0"
-                  className="w-full bg-purple/30 border border-purple/50 text-white placeholder-blush/30
-                             rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-amber
-                             focus:ring-1 focus:ring-amber/50 transition"
-                />
-              </div>
-            </div>
-
-            {/* Skills section */}
+            {/* Skills */}
             <div>
-              <label className="block text-blush/80 text-sm mb-2">Skills</label>
+              <label className="block text-blush/70 text-xs uppercase tracking-wide mb-2.5">Skills</label>
 
-              <div className="flex flex-wrap gap-2 mb-3 min-h-[2.5rem]">
+              <div className="flex flex-wrap gap-2 mb-3 min-h-[2.25rem]">
                 {skills.length === 0 && (
-                  <p className="text-blush/40 text-xs italic">
-                    No skills yet — add manually or upload a resume.
-                  </p>
+                  <p className="text-blush/30 text-xs italic">No skills yet — add manually or upload a resume.</p>
                 )}
-                {skills.map((skill, i) => (
-                  <span
-                    key={skill}
-                    style={{ animationDelay: `${i * 40}ms` }}
-                    className="group flex items-center gap-1.5 bg-purple/40 hover:bg-purple/60
-                               border border-purple/50 text-white text-xs font-medium
-                               rounded-full pl-3 pr-2 py-1.5 transition-all duration-300
-                               animate-[popIn_0.3s_ease_backwards]"
-                  >
-                    {skill}
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveSkill(skill)}
-                      className="w-4 h-4 rounded-full flex items-center justify-center
-                                 text-blush/60 hover:text-white hover:bg-rose/60 transition"
-                      aria-label={`Remove ${skill}`}
+                <AnimatePresence>
+                  {skills.map((skill) => (
+                    <motion.span
+                      key={skill}
+                      layout
+                      initial={{ opacity: 0, scale: 0.7 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.7 }}
+                      transition={{ duration: 0.2 }}
+                      className="group flex items-center gap-1.5 bg-amber/10 border border-amber/25 text-amber text-xs font-medium
+                                 rounded-full pl-3 pr-2 py-1.5"
                     >
-                      ×
-                    </button>
-                  </span>
-                ))}
+                      {skill}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveSkill(skill)}
+                        className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0
+                                   text-amber/60 hover:text-white hover:bg-red-500/60 transition-colors duration-200"
+                        aria-label={`Remove ${skill}`}
+                      >
+                        <X size={11} />
+                      </button>
+                    </motion.span>
+                  ))}
+                </AnimatePresence>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <input
                   type="text"
                   value={newSkill}
@@ -236,44 +460,37 @@ export default function Profile() {
                     if (e.key === "Enter") handleAddSkill(e);
                   }}
                   placeholder="Add a skill and press Enter"
-                  className="flex-1 bg-purple/30 border border-purple/50 text-white placeholder-blush/30
-                             rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber
-                             focus:ring-1 focus:ring-amber/50 transition"
+                  className="flex-1 min-w-0 bg-white/[0.03] border border-white/10 text-white placeholder-blush/25
+                             rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber/50 transition-colors duration-200"
                 />
                 <button
                   type="button"
                   onClick={handleAddSkill}
-                  className="bg-purple/50 hover:bg-purple/70 text-white text-sm font-medium
-                             rounded-xl px-4 transition"
+                  className="flex items-center justify-center gap-1.5 bg-white/[0.05] hover:bg-white/[0.09] border border-white/10
+                             text-blush/80 text-sm font-medium rounded-xl px-4 py-2.5 sm:py-0 transition-colors duration-200 flex-shrink-0"
                 >
-                  Add
+                  <Plus size={15} /> Add
                 </button>
               </div>
             </div>
 
-            <button
+            <MagneticButton
               type="submit"
               disabled={saving}
-              className="w-full bg-amber hover:bg-amber/90 text-navy font-semibold
-                         rounded-xl py-3 text-sm transition shadow-glow-amber
-                         disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full bg-amber text-navy font-semibold rounded-xl py-3 text-sm mt-2 flex items-center justify-center gap-2
+                         transition-shadow duration-300 hover:shadow-[0_0_30px_rgba(237,158,89,0.4)] disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {saving ? "Saving..." : "Save Changes"}
-            </button>
+              {saving ? (
+                <>
+                  <Loader2 size={15} className="animate-spin" /> Saving
+                </>
+              ) : (
+                "Save changes"
+              )}
+            </MagneticButton>
           </form>
-        </div>
+        </motion.div>
       </main>
-
-      <style>{`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(-4px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes popIn {
-          from { opacity: 0; transform: scale(0.7); }
-          to { opacity: 1; transform: scale(1); }
-        }
-      `}</style>
     </div>
   );
 }
