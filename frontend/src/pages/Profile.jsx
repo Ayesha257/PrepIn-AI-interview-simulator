@@ -1,6 +1,7 @@
 // src/pages/Profile.jsx
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence, useMotionValue, useSpring } from "framer-motion";
+import PrepInLogo from "../components/PrepInLogo";
 import {
   User,
   Briefcase,
@@ -313,7 +314,13 @@ export default function Profile() {
       {/* Navbar */}
       <nav className="relative z-10 border-b border-white/10 bg-white/[0.03] backdrop-blur-md sticky top-0">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-          <span className="font-display text-xl sm:text-2xl font-bold text-amber tracking-tight">PrepIn</span>
+        <div className="flex items-center gap-3">
+            <PrepInLogo size={42} />
+            <span className="font-display text-2xl font-bold tracking-tight text-white">
+                Prep
+                <span className="text-amber">In</span>
+            </span>
+        </div>
           <button
             onClick={logout}
             className="flex items-center gap-1.5 text-blush/60 hover:text-blush text-xs sm:text-sm transition-colors duration-200"
