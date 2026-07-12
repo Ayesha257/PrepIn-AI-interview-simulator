@@ -29,14 +29,36 @@ async def get_dashboard(current_user: dict = Depends(get_current_user)):
         {"$group": {"_id": None, "avg_score": {"$avg": "$questions.score"}}},
     ]
     result = await db.sessions.aggregate(pipeline).to_list(1)
+    
     avg_score = round(result[0]["avg_score"], 2) if result else None
+    best_pipeline = [
+    {"$match": {"user_id": user_id, "status": "completed"}},
+    {"$unwind": "$questions"},
+    {"$match": {"questions.score": {"$ne": None}}},
+    {
+        "$group": {
+            "_id": "$_id",
+            "session_avg": {"$avg": "$questions.score"}
+        }
+    },
+    {
+        "$group": {
+            "_id": None,
+            "best_score": {"$max": "$session_avg"}
+        }
+    }
+    ]
 
+    best_result = await db.sessions.aggregate(best_pipeline).to_list(1)
+
+    best_score = round(best_result[0]["best_score"], 2) if best_result else None
     return {
-        "resume_count": resume_count,
-        "total_sessions": total_sessions,
-        "completed_sessions": completed_sessions,
-        "avg_score": avg_score,
-        "interview_count": current_user.get("profile", {}).get("interview_count", 0),
+    "resume_count": resume_count,
+    "total_sessions": total_sessions,
+    "completed_sessions": completed_sessions,
+    "avg_score": avg_score,
+    "best_score": best_score,
+    "interview_count": current_user.get("profile", {}).get("interview_count", 0),
     }
 
 
@@ -93,7 +115,7 @@ async def get_score_trend(current_user: dict = Depends(get_current_user)):
         {"$sort": {"ended_at": 1}},
     ]
     results = await db.sessions.aggregate(pipeline).to_list(50)
-
+    
     return {
         "trend": [
             {
