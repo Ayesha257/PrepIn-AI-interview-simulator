@@ -70,7 +70,6 @@ async def orchestrate_workflow(session_id: str, user_answer: str):
             f"questions.{question_count - 1}.feedback": feedback,
         }}
     )
-<<<<<<< HEAD
     
     should_end, reason = should_end_interview(session["questions"], question_count)
     
@@ -103,14 +102,6 @@ async def orchestrate_workflow(session_id: str, user_answer: str):
             {"$set": {"status": "completed", "ended_at": datetime.utcnow(), "final_report_id": report_id}}
             )
         
-=======
-
-    if question_count >= 5:
-        db["sessions"].update_one(
-            {"_id": ObjectId(session_id)},
-            {"$set": {"status": "completed", "ended_at": datetime.utcnow()}}
-        )
->>>>>>> origin/main
         next_question = None
         status = "completed"
 
@@ -123,11 +114,7 @@ async def orchestrate_workflow(session_id: str, user_answer: str):
         if signal == "loop_back":
             next_question = generate_question(skills, job_role, seniority_level, difficulty, previous_questions, True, user_answer)
         else:
-<<<<<<< HEAD
             next_question = generate_question(skills, job_role, seniority_level, difficulty, previous_questions, False, user_answer)
-=======
-            next_question = generate_question(skills, job_role, difficulty, previous_questions, False, user_answer)
->>>>>>> origin/main
 
         # FIX: actually save the next question so it can be matched correctly next time
         next_question_data = {
