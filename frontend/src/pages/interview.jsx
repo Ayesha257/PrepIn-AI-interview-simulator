@@ -102,6 +102,8 @@ export default function Interview() {
 
   const recognitionRef = useRef(null);
   const isListeningRef = useRef(false);
+  const utteranceRef = useRef(null);
+  const baseAnswerRef = useRef(""); // text already recorded/typed before the current recording segment
 
   const typewriterSpeak = (text, setText, shouldSpeak = true) => {
     return new Promise((resolve) => {
@@ -122,47 +124,64 @@ export default function Interview() {
       }
 
       window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
 
-      const setVoice = () => {
-        const voices = window.speechSynthesis.getVoices();
-        const preferred = voices.find(
-          (v) =>
-            v.name === "Google UK English Female" ||
-            v.name === "Google UK English Male" ||
-            v.name === "Google US English" ||
-            v.name.includes("Samantha") ||
-            v.name.includes("Daniel") ||
-            v.name.includes("Karen"),
-        );
-        if (preferred) utterance.voice = preferred;
-      };
+      // Small delay after cancel — Chrome can silently drop the next
+      // speak() call if it's fired in the same tick as cancel()
+      setTimeout(() => {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utteranceRef.current = utterance; // keep a strong reference — prevents GC mid-speech
 
-      if (window.speechSynthesis.getVoices().length > 0) {
-        setVoice();
-      } else {
-        window.speechSynthesis.onvoiceschanged = setVoice;
-      }
+        const setVoice = () => {
+          const voices = window.speechSynthesis.getVoices();
+          const preferred = voices.find(
+            (v) =>
+              v.name === "Google UK English Female" ||
+              v.name === "Google UK English Male" ||
+              v.name === "Google US English" ||
+              v.name.includes("Samantha") ||
+              v.name.includes("Daniel") ||
+              v.name.includes("Karen"),
+          );
+          if (preferred) utterance.voice = preferred;
+        };
 
-      utterance.rate = 1.0;
-      utterance.pitch = 1.0;
-      utterance.volume = 1;
-
-      utterance.onboundary = (event) => {
-        if (event.name === "word") {
-          currentIndex++;
-          setText(words.slice(0, currentIndex).join(" "));
+        if (window.speechSynthesis.getVoices().length > 0) {
+          setVoice();
+        } else {
+          window.speechSynthesis.onvoiceschanged = setVoice;
         }
-      };
 
-      utterance.onstart = () => setIsSpeaking(true);
-      utterance.onend = () => {
-        setText(text);
-        setIsSpeaking(false);
-        resolve();
-      };
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
+        utterance.volume = 1;
 
-      window.speechSynthesis.speak(utterance);
+        utterance.onboundary = (event) => {
+          if (event.name === "word") {
+            currentIndex++;
+            setText(words.slice(0, currentIndex).join(" "));
+          }
+        };
+
+        utterance.onstart = () => setIsSpeaking(true);
+
+        utterance.onend = () => {
+          setText(text);
+          setIsSpeaking(false);
+          utteranceRef.current = null;
+          resolve();
+        };
+
+        // If speech errors out, the promise used to hang forever, silently
+        // leaving the UI stuck — now it falls back to plain text instead.
+        utterance.onerror = () => {
+          setText(text);
+          setIsSpeaking(false);
+          utteranceRef.current = null;
+          resolve();
+        };
+
+        window.speechSynthesis.speak(utterance);
+      }, 50);
     });
   };
 
@@ -174,54 +193,71 @@ export default function Interview() {
       return;
     }
 
+    // Clean up any previous recognition instance completely before starting a new one
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.onend = null;
+        recognitionRef.current.onresult = null;
+        recognitionRef.current.onerror = null;
+        recognitionRef.current.abort();
+      } catch {}
+      recognitionRef.current = null;
+    }
+
+    // Preserve whatever text already exists (typed or from a previous
+    // recording segment) so the new segment appends instead of overwriting
+    baseAnswerRef.current = answer.trim();
+
     isListeningRef.current = true;
     setIsListening(true);
 
-    if (!recognitionRef.current) {
-      const recognition = new SpeechRecognition();
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = "en-US";
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = "en-US";
 
-      recognition.onresult = (event) => {
-        const transcript = Array.from(event.results)
-          .map((r) => r[0].transcript)
-          .join("");
-        setAnswer(transcript);
-      };
+    recognition.onresult = (event) => {
+      const newTranscript = Array.from(event.results)
+        .map((r) => r[0].transcript)
+        .join("");
 
-      recognition.onerror = (e) => {
-        if (e.error === "aborted" || e.error === "no-speech") return;
-        if (e.error === "network") {
-          setTimeout(() => {
-            if (isListeningRef.current) {
-              try {
-                recognitionRef.current?.start();
-              } catch {}
-            }
-          }, 500);
-          return;
-        }
-        setError("Mic error: " + e.error);
-        isListeningRef.current = false;
+      const combined = baseAnswerRef.current
+        ? `${baseAnswerRef.current} ${newTranscript}`
+        : newTranscript;
+
+      setAnswer(combined);
+    };
+
+    recognition.onerror = (e) => {
+      if (e.error === "aborted" || e.error === "no-speech") return;
+      if (e.error === "network") {
+        setTimeout(() => {
+          if (isListeningRef.current) {
+            try {
+              recognitionRef.current?.start();
+            } catch {}
+          }
+        }, 500);
+        return;
+      }
+      setError("Mic error: " + e.error);
+      isListeningRef.current = false;
+      setIsListening(false);
+    };
+
+    recognition.onend = () => {
+      if (isListeningRef.current) {
+        try {
+          recognitionRef.current?.start();
+        } catch {}
+      } else {
         setIsListening(false);
-      };
+      }
+    };
 
-      recognition.onend = () => {
-        if (isListeningRef.current) {
-          try {
-            recognitionRef.current?.start();
-          } catch {}
-        } else {
-          setIsListening(false);
-        }
-      };
-
-      recognitionRef.current = recognition;
-    }
-
+    recognitionRef.current = recognition;
     try {
-      recognitionRef.current.start();
+      recognition.start();
     } catch (e) {}
   };
 
@@ -296,6 +332,7 @@ export default function Interview() {
     setDisplayedFeedback("");
     setQuestionNumber((n) => n + 1);
     setAnswer("");
+    baseAnswerRef.current = "";
     setLastFeedback(null);
     setPhase("active");
     await typewriterSpeak(nextQuestionData.next_question, setDisplayedQuestion, true);
@@ -312,6 +349,7 @@ export default function Interview() {
     setDisplayedFeedback("");
     setQuestionNumber((n) => n + 1);
     setAnswer("");
+    baseAnswerRef.current = "";
     setLastFeedback(null);
     setPhase("active");
   };

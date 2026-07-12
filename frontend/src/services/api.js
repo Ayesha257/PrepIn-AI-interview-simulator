@@ -59,7 +59,9 @@ export const authAPI = {
     }),
 
   getMe: () => apiFetch("/auth/me"),
-
+  forgotPassword: (email) =>
+    apiFetch("/auth/forgot-password", { method: "POST", body: JSON.stringify({ email }) }),
+  
   updateProfile: (data) =>
     apiFetch("/auth/profile", { method: "PUT", body: JSON.stringify(data) }),
 };
@@ -109,4 +111,6 @@ export const interviewAPI = {
 // ──────────────── REPORT ────────────────
 export const reportAPI = {
   getReport: (sessionId) => apiFetch(`/report/report/${sessionId}`),
+
+  getLatestReport: () => apiFetch("/report/latest"),
 };

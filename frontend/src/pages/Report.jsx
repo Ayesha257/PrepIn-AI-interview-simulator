@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { reportAPI } from "../services/api";
 import { motion, AnimatePresence } from "framer-motion";
 import { Trophy, ChevronDown, CheckCircle2, AlertCircle, Lightbulb, FileText, RotateCcw, LayoutDashboard } from "lucide-react";
+import PrepInLogo from "../components/PrepInLogo";
 
 function NeuralBackground() {
   const canvasRef = useRef(null);
@@ -131,8 +132,14 @@ export default function Report() {
 
       {/* Navbar */}
       <nav className="relative z-10 border-b border-white/10 bg-white/[0.02] backdrop-blur-xl sticky top-0">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between">
-          <span className="font-display text-xl font-bold text-amber">PrepIn</span>
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+        <PrepInLogo size={42} clickable />
+            <span className="font-display text-2xl font-bold tracking-tight text-white" >
+                Prep
+                <span className="text-amber">In</span>
+            </span>
+        </div>
           <button onClick={() => navigate("/dashboard")} className="text-blush/60 hover:text-white text-sm transition-colors duration-200 flex items-center gap-1.5">
             <LayoutDashboard size={14} /> Dashboard
           </button>
