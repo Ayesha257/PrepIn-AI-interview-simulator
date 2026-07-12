@@ -135,7 +135,7 @@ export default function Report() {
         <div className="max-w-2xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
         <PrepInLogo size={42} clickable />
-            <span className="font-display text-2xl font-bold tracking-tight text-white" >
+            <span className="font-display text-2xl font-bold tracking-tight text-white">
                 Prep
                 <span className="text-amber">In</span>
             </span>
