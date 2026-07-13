@@ -49,9 +49,6 @@ export const authAPI = {
   googleLogin: (token) =>
     apiFetch("/auth/google-login", { method: "POST", body: JSON.stringify({ token }) }),
 
-  forgotPassword: (email) =>
-    apiFetch("/auth/forgot-password", { method: "POST", body: JSON.stringify({ email }) }),
-
   resetPassword: (email, code, newPassword) =>
     apiFetch("/auth/reset-password", {
       method: "POST",
@@ -61,7 +58,7 @@ export const authAPI = {
   getMe: () => apiFetch("/auth/me"),
   forgotPassword: (email) =>
     apiFetch("/auth/forgot-password", { method: "POST", body: JSON.stringify({ email }) }),
-  
+
   updateProfile: (data) =>
     apiFetch("/auth/profile", { method: "PUT", body: JSON.stringify(data) }),
 };
