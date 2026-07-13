@@ -1,6 +1,6 @@
 // src/pages/VerifyCode.jsx
 import { useState } from "react";
-import { useLocation, useNavigate, Link } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { authAPI } from "../services/api";
 
 export default function VerifyCode() {
