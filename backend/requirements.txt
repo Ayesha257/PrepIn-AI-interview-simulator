@@ -9,3 +9,4 @@ python-decouple==3.8
 pydantic[email]==2.7.1
 groq
 google-auth
+requests
