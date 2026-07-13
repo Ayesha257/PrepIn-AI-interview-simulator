@@ -69,6 +69,7 @@ npm start
 ```
 
 ## Made By
-
+```
 Ayesha Amer
 Faiqa Wasseem
+```
