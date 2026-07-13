@@ -18,7 +18,10 @@ app = FastAPI(
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://prepin.vercel.app"],
+    allow_origins=[
+        "http://prep-in-ai-interview-simulator-hcgr.vercel.app/",
+        "http://localhost:3000",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
