@@ -71,5 +71,5 @@ npm start
 ## Made By
 ```
 Ayesha Amer
-Faiqa Wasseem
+Faiqa Waseem
 ```
