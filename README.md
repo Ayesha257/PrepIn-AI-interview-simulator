@@ -49,7 +49,7 @@ cd backend
 python -m venv venv
 venv\Scripts\activate      # on Mac/Linux: source venv/bin/activate
 pip install -r requirements.txt
-python main.py
+uvicorn main:app --reload
 ```
 
 `.env` file (inside `backend/`):
