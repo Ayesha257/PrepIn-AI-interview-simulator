@@ -379,24 +379,28 @@ export default function Dashboard() {
   const [latestReport, setLatestReport] = useState(null);
   const fetchData = async () => {
     try {
-      const [dashData, trendData, resumeData, reportData] =
-      await Promise.all([
-          analyticsAPI.getDashboard(),
-          analyticsAPI.getTrend(),
-          resumeAPI.getMyResumes(),
-          reportAPI.getLatestReport(),
+      const [dashData, trendData, resumeData] = await Promise.all([
+        analyticsAPI.getDashboard(),
+        analyticsAPI.getTrend(),
+        resumeAPI.getMyResumes(),
       ]);
-
+  
       setStats(dashData);
       setTrend(trendData.trend || []);
       setResumes(resumeData.resumes);
-      setLatestReport(reportData.report);
+  
+      try {
+        const reportData = await reportAPI.getLatestReport();
+        setLatestReport(reportData.report);
+      } catch (err) {
+        setLatestReport(null); // koi report nahi hai abhi, koi issue nahi
+      }
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
     }
-  };
+  }; 
 
   useEffect(() => {
     fetchData();
