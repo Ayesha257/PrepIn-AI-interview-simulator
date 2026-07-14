@@ -5,7 +5,6 @@ AI-powered interview simulator that generates resume-based interview questions, 
 ## Live Demo
 
 - **Frontend:** https://prep-in-ai-interview-simulator-hcgr.vercel.app
-- **Backend API Docs:** https://prepin-ai-interview-simulator.onrender.com/docs
 
 > Note: the backend is hosted on a free tier and may take 30-50 seconds to respond on the first request after inactivity.
 
