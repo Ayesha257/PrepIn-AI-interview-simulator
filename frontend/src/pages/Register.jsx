@@ -382,7 +382,7 @@ export default function Register() {
     try {
       await register(form.name, form.email, form.password);
       setSuccess(true);
-      setTimeout(() => navigate("/login"), 700);
+      setTimeout(() => navigate("/verify-code", { state: { email: form.email } }), 700);
     } catch (err) {
       setError(err.message);
       setLoading(false);
