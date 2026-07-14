@@ -389,11 +389,17 @@ export default function Dashboard() {
       setTrend(trendData.trend || []);
       setResumes(resumeData.resumes);
   
-      try {
-        const reportData = await reportAPI.getLatestReport();
-        setLatestReport(reportData.report);
-      } catch (err) {
-        setLatestReport(null); // koi report nahi hai abhi, koi issue nahi
+      // Naye user ka koi completed session hi nahi hoga, is liye report
+      // call karne ki zaroorat nahi — isse bekar 404 bhi console me nahi aayega.
+      if (dashData?.completed_sessions > 0) {
+        try {
+          const reportData = await reportAPI.getLatestReport();
+          setLatestReport(reportData.report);
+        } catch (err) {
+          setLatestReport(null); // fallback, agar backend phir bhi 404 de
+        }
+      } else {
+        setLatestReport(null);
       }
     } catch (err) {
       console.error(err);
