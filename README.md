@@ -4,7 +4,7 @@ AI-powered interview simulator that generates resume-based interview questions, 
 
 ## Live Demo
 
-- **Frontend:** https://prep-in-ai-interview-simulator-hcgr.vercel.app
+- https://prep-in-ai-interview-simulator-hcgr.vercel.app
 
 ## Features
 
