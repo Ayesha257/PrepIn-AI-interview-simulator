@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 from groq import Groq
 from pathlib import Path
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
-client = Groq(api_key="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")
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 def score_answer(question: str, answer: str) -> float:
     prompt = f"""

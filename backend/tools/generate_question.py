@@ -4,7 +4,7 @@ from groq import Groq
 
 from pathlib import Path
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
-client = Groq(api_key="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")
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 def generate_question(topic: str, difficulty: str, skills: list) -> str:
     skills_str = ", ".join(skills) if skills else "general software development"
