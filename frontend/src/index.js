@@ -5,11 +5,17 @@ import App from './App';
 import reportWebVitals from './reportWebVitals';
 import { GoogleOAuthProvider } from "@react-oauth/google";
 
+const googleClientId = process.env.REACT_APP_GOOGLE_CLIENT_ID;
+if (!googleClientId) {
+  // eslint-disable-next-line no-console
+  console.warn("REACT_APP_GOOGLE_CLIENT_ID is not set — Google login will not work.");
+}
+
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
 root.render(
   <React.StrictMode>
-    <GoogleOAuthProvider clientId="720166320779-s0ppuapkv51g6lc8dl8u7v0p0rd6j67r.apps.googleusercontent.com">
+    <GoogleOAuthProvider clientId={googleClientId || ""}>
       <App />
     </GoogleOAuthProvider>
   </React.StrictMode>

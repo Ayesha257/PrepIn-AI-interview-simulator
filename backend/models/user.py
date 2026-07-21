@@ -5,7 +5,7 @@ from datetime import datetime
 class UserRegister(BaseModel):
     name: str = Field(..., min_length=2, max_length=50)
     email: EmailStr
-    password: str = Field(..., min_length=6)
+    password: str = Field(..., min_length=8, max_length=72)
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -56,4 +56,4 @@ class ForgotPasswordRequest(BaseModel):
 class ResetPasswordRequest(BaseModel):
     email: str
     code: str
-    new_password: str
+    new_password: str = Field(..., min_length=8, max_length=72)
