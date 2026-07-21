@@ -1,17 +1,24 @@
 import os
-import random
+import secrets
 import requests
+from pathlib import Path
 from dotenv import load_dotenv
-load_dotenv()
+
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 BREVO_API_KEY = os.getenv("BREVO_API_KEY")
 BREVO_API_URL = "https://api.brevo.com/v3/smtp/email"
 MAIL_FROM = os.getenv("MAIL_FROM")
 
+
 def generate_verification_code() -> str:
-    return str(random.randint(100000, 999999))  # 6-digit code
+    # Cryptographically secure 6-digit code
+    return f"{secrets.randbelow(1_000_000):06d}"
+
 
 def _send_email(to_email: str, subject: str, html_body: str):
+    if not BREVO_API_KEY or not MAIL_FROM:
+        raise Exception("Email is not configured")
     headers = {
         "accept": "application/json",
         "api-key": BREVO_API_KEY,
@@ -23,9 +30,9 @@ def _send_email(to_email: str, subject: str, html_body: str):
         "subject": subject,
         "htmlContent": html_body,
     }
-    response = requests.post(BREVO_API_URL, json=payload, headers=headers)
+    response = requests.post(BREVO_API_URL, json=payload, headers=headers, timeout=20)
     if response.status_code >= 300:
-        raise Exception(f"Brevo API error: {response.status_code} - {response.text}")
+        raise Exception(f"Email service error: {response.status_code}")
     return response.json()
 
 

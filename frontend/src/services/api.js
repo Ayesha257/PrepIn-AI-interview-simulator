@@ -94,13 +94,16 @@ export const interviewAPI = {
     }),
 
   startInterview: (sessionId) =>
-    apiFetch(`/interview/start?session_id=${sessionId}`, { method: "POST" }),
+    apiFetch(`/interview/start`, {
+      method: "POST",
+      body: JSON.stringify({ session_id: sessionId }),
+    }),
 
   submitAnswer: (sessionId, userAnswer) =>
-    apiFetch(
-      `/interview/answer?session_id=${sessionId}&user_answer=${encodeURIComponent(userAnswer)}`,
-      { method: "POST" }
-    ),
+    apiFetch(`/interview/answer`, {
+      method: "POST",
+      body: JSON.stringify({ session_id: sessionId, user_answer: userAnswer }),
+    }),
 
   getSession: (sessionId) => apiFetch(`/interview/session/${sessionId}`),
 };
