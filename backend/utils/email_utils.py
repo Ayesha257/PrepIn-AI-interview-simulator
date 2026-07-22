@@ -1,21 +1,40 @@
-from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
 import os
-import random
+import secrets
+import requests
+from pathlib import Path
 from dotenv import load_dotenv
-load_dotenv()
 
-conf = ConnectionConfig(
-    MAIL_USERNAME=os.getenv("MAIL_USERNAME"),
-    MAIL_PASSWORD=os.getenv("MAIL_PASSWORD"),
-    MAIL_FROM=os.getenv("MAIL_FROM"),
-    MAIL_PORT=587,
-    MAIL_SERVER=os.getenv("MAIL_SERVER"),
-    MAIL_STARTTLS=True,
-    MAIL_SSL_TLS=False,
-)
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+
+BREVO_API_KEY = os.getenv("BREVO_API_KEY")
+BREVO_API_URL = "https://api.brevo.com/v3/smtp/email"
+MAIL_FROM = os.getenv("MAIL_FROM")
+
 
 def generate_verification_code() -> str:
-    return str(random.randint(100000, 999999))  # 6-digit code
+    # Cryptographically secure 6-digit code
+    return f"{secrets.randbelow(1_000_000):06d}"
+
+
+def _send_email(to_email: str, subject: str, html_body: str):
+    if not BREVO_API_KEY or not MAIL_FROM:
+        raise Exception("Email is not configured")
+    headers = {
+        "accept": "application/json",
+        "api-key": BREVO_API_KEY,
+        "content-type": "application/json",
+    }
+    payload = {
+        "sender": {"name": "PrepIn", "email": MAIL_FROM},
+        "to": [{"email": to_email}],
+        "subject": subject,
+        "htmlContent": html_body,
+    }
+    response = requests.post(BREVO_API_URL, json=payload, headers=headers, timeout=20)
+    if response.status_code >= 300:
+        raise Exception(f"Email service error: {response.status_code}")
+    return response.json()
+
 
 async def send_verification_code_email(email: str, code: str):
     html_body = f"""
@@ -36,15 +55,7 @@ async def send_verification_code_email(email: str, code: str):
         </p>
     </div>
     """
-
-    message = MessageSchema(
-        subject="Your PrepIn verification code",
-        recipients=[email],
-        body=html_body,
-        subtype="html"
-    )
-    fm = FastMail(conf)
-    await fm.send_message(message)
+    _send_email(email, "Your PrepIn verification code", html_body)
 
 
 async def send_reset_password_code_email(email: str, code: str):
@@ -66,12 +77,4 @@ async def send_reset_password_code_email(email: str, code: str):
         </p>
     </div>
     """
-
-    message = MessageSchema(
-        subject="Your PrepIn password reset code",
-        recipients=[email],
-        body=html_body,
-        subtype="html"
-    )
-    fm = FastMail(conf)
-    await fm.send_message(message)
+    _send_email(email, "Your PrepIn password reset code", html_body)
