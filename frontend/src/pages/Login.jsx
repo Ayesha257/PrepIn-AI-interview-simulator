@@ -270,7 +270,7 @@ function Field({ icon: Icon, label, type = "text", name, value, onChange, showTo
 }
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, loginWithToken } = useAuth();
   const navigate = useNavigate();
 
   const [form, setForm] = useState({ email: "", password: "" });
@@ -366,7 +366,7 @@ export default function Login() {
     setLoading(true);
     try {
       const data = await authAPI.googleLogin(credentialResponse.credential);
-      localStorage.setItem("token", data.access_token);
+      loginWithToken(data); // syncs token + user into AuthContext, same as login()/verifyCode()
       setSuccess(true);
       setTimeout(() => navigate("/dashboard"), 500);
     } catch (err) {

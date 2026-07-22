@@ -1,7 +1,9 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, status
 from datetime import datetime, timezone
 from bson import ObjectId
-import os, shutil
+import os
+import uuid
+from pathlib import Path
 from database import get_db
 from models.resume import ResumeResponse, ResumeListResponse
 from utils.auth import get_current_user
@@ -13,20 +15,24 @@ def extract_text(file_path: str, content_type: str) -> str:
     if content_type == "application/pdf":
         reader = PdfReader(file_path)
         text = ""
-        for page in reader.pages:
+        for page in reader.pages[:50]:  # hard page cap
             text += page.extract_text() or ""
         return text
     else:
         doc = docx.Document(file_path)
-        return "\n".join([para.text for para in doc.paragraphs])
+        return "\n".join([para.text for para in doc.paragraphs[:2000]])
 
 router = APIRouter()
 
-UPLOAD_DIR = "uploads/resumes"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+UPLOAD_DIR = Path("uploads/resumes").resolve()
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
-ALLOWED_TYPES = {"application/pdf", "application/msword",
-                 "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}
+ALLOWED_TYPES = {
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+}
+ALLOWED_EXTENSIONS = {".pdf", ".doc", ".docx"}
 MAX_SIZE_MB = 5
 
 def serialize_resume(r: dict) -> dict:
@@ -51,44 +57,50 @@ async def upload_resume(
     file: UploadFile = File(...),
     current_user: dict = Depends(get_current_user)
 ):
-    # Validate file type
+    original_name = Path(file.filename or "upload.bin").name
+    ext = Path(original_name).suffix.lower()
+    if ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(status_code=400, detail="Only PDF or DOCX files allowed")
     if file.content_type not in ALLOWED_TYPES:
         raise HTTPException(status_code=400, detail="Only PDF or DOCX files allowed")
 
-    # Read & check size
     content = await file.read()
     size_mb = len(content) / (1024 * 1024)
     if size_mb > MAX_SIZE_MB:
         raise HTTPException(status_code=400, detail=f"File too large. Max {MAX_SIZE_MB}MB")
 
-    # Save file to disk
+    # Magic-byte checks (basic)
+    if ext == ".pdf" and not content.startswith(b"%PDF"):
+        raise HTTPException(status_code=400, detail="Invalid PDF file")
+    if ext in {".doc", ".docx"} and not (content[:2] == b"PK" or content[:8] == b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"):
+        raise HTTPException(status_code=400, detail="Invalid Word document")
+
     user_id_str = str(current_user["_id"])
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    safe_filename = f"{user_id_str}_{timestamp}_{file.filename}"
-    file_path = os.path.join(UPLOAD_DIR, safe_filename)
+    safe_filename = f"{user_id_str}_{uuid.uuid4().hex}{ext}"
+    file_path = (UPLOAD_DIR / safe_filename).resolve()
+    if not str(file_path).startswith(str(UPLOAD_DIR)):
+        raise HTTPException(status_code=400, detail="Invalid file path")
 
     with open(file_path, "wb") as f:
         f.write(content)
 
-    # Extract text from the file
-    resume_text = extract_text(file_path, file.content_type)
-
-    # Run the Resume Agent to parse skills
+    resume_text = extract_text(str(file_path), file.content_type)
     parsed_data = run_resume_agent(user_id_str, resume_text)
 
     db = get_db()
     resume_doc = {
-    "user_id": current_user["_id"],
-    "filename": file.filename,
-    "file_path": file_path,
-    "uploaded_at": datetime.now(timezone.utc),
-    "is_parsed": True,
-    "status": "parsed",
-    "skills": parsed_data["skills"],
-    "experience_years": parsed_data["experience_years"],
-    "education": parsed_data["education"],
-    "job_role": parsed_data["job_role"],
-    "raw_text": resume_text
+        "user_id": current_user["_id"],
+        "filename": original_name,
+        "file_path": str(file_path),
+        "uploaded_at": datetime.now(timezone.utc),
+        "is_parsed": True,
+        "status": "parsed",
+        "skills": parsed_data["skills"],
+        "experience_years": parsed_data["experience_years"],
+        "education": parsed_data["education"],
+        "job_role": parsed_data["job_role"],
+        # Store truncated text only — reduces PII footprint in DB
+        "raw_text": resume_text[:50000],
     }
 
     result = await db.resumes.insert_one(resume_doc)

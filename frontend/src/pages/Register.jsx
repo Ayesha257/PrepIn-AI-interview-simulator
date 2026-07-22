@@ -356,8 +356,8 @@ export default function Register() {
     let pct = 0;
     if (form.name.trim().length > 1) pct += 25;
     if (/^\S+@\S+\.\S+$/.test(form.email)) pct += 25;
-    if (form.password.length >= 6) pct += 25;
-    if (form.confirm && form.confirm === form.password && form.password.length >= 6) pct += 25;
+    if (form.password.length >= 8) pct += 25;
+    if (form.confirm && form.confirm === form.password && form.password.length >= 8) pct += 25;
     return pct;
   }, [form]);
 
@@ -374,15 +374,15 @@ export default function Register() {
       setError("Passwords don't match");
       return;
     }
-    if (form.password.length < 6) {
-      setError("Password must be at least 6 characters");
+    if (form.password.length < 8) {
+      setError("Password must be at least 8 characters");
       return;
     }
     setLoading(true);
     try {
       await register(form.name, form.email, form.password);
       setSuccess(true);
-      setTimeout(() => navigate("/login"), 700);
+      setTimeout(() => navigate("/verify-code", { state: { email: form.email } }), 700);
     } catch (err) {
       setError(err.message);
       setLoading(false);
