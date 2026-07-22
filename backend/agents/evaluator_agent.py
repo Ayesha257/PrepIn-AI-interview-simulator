@@ -31,37 +31,33 @@ def run_evaluator_agent(session_id: str, question_index: int, question: str, ans
         "Senior": "Be strict. Expect depth, trade-offs, real-world examples. Partial credit only for strong partial answers."
     }.get(seniority_level, "Be fair and balanced in scoring.")
 
-    prompt = f"""You are a professional technical interview evaluator.
+    prompt = f"""
+You are an experienced technical interviewer evaluating a candidate's answer.
 
-Question: {question}
+Question asked: {question}
 Candidate's answer: {answer}
-Seniority level being interviewed for: {seniority_level}
 
-Scoring guidance:
-{level_expectations}
+Score the answer from 0.0 to 10.0 using this rubric. Use the FULL range — do not default to a "safe" middle score. Most answers should NOT score exactly 7.5.
 
-Scoring scale:
-- 9-10: Excellent — complete, accurate, well-explained
-- 7-8: Good — mostly correct with minor gaps
-- 5-6: Fair — correct direction but incomplete
-- 3-4: Weak — some understanding but significant gaps
-- 1-2: Poor — mostly incorrect
-- 0: No attempt or completely wrong
+Scoring guide:
+- 9.0–10.0: Technically accurate, complete, and clearly explained. Covers the key points a strong candidate would mention. Doesn't need to be exhaustive — a concise but correct and complete answer deserves top marks.
+- 7.0–8.9: Mostly correct with good understanding, but missing a minor detail, slightly vague in one area, or could be more precise.
+- 5.0–6.9: Partially correct — shows some understanding but has a notable gap, a minor inaccuracy, or lacks depth.
+- 3.0–4.9: Mostly incorrect or very shallow — shows limited understanding, only surface-level or buzzword-based.
+- 0.0–2.9: Wrong, irrelevant, or effectively no real answer (e.g. "I don't know", nonsensical, or completely off-topic).
 
-Also evaluate:
-- Communication clarity (did they explain well?)
-- Problem-solving approach (did they think out loud?)
-- Confidence in delivery
+Important:
+- Judge based on technical correctness and completeness relative to the question — NOT length. A short, precise, correct answer deserves a high score.
+- Do not penalize for brevity if all key points are covered correctly.
+- Do not penalize for imperfect grammar or phrasing if the technical content is correct.
+- Be encouraging but honest — this is for a student practicing interviews, so fair, accurate scoring (not artificially inflated or deflated) is more helpful than a "safe" middling score.
 
-Write feedback directly addressing the candidate as "you".
-Be encouraging and constructive — always end with something positive or a tip.
-
-Return ONLY valid JSON:
+Return ONLY valid JSON (no markdown, no explanation):
 {{
   "score": 7.5,
-  "feedback": "your detailed encouraging feedback here"
-}}"""
-
+  "feedback": "your feedback here"
+}}
+"""
     try:
         response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",

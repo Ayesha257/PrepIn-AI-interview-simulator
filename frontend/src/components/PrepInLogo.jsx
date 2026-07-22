@@ -1,23 +1,28 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 
 export default function PrepInLogo({
   size = 42,
   wordmark = false,
+  clickable = false,
   amber = "#ED9E59",
   pink = "#E98CB9",
 }) {
   const [hovered, setHovered] = useState(false);
+  const navigate = useNavigate();
   const gradId = "prepin-grad";
-  const softId = "prepin-soft";
+  const softId = "prepin-soft"; 
 
   return (
     <div
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: size * 0.28,
-      }}
+    onClick={() => clickable && navigate("/dashboard")}
+    style={{
+      display: "inline-flex",
+      alignItems: "center",
+      gap: size * 0.28,
+      cursor: clickable ? "pointer" : "default",
+    }}
     >
       <motion.div
         onHoverStart={() => setHovered(true)}

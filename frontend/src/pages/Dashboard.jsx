@@ -2,7 +2,7 @@
 import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
-import { analyticsAPI, resumeAPI } from "../services/api";
+import { analyticsAPI, resumeAPI, reportAPI } from "../services/api";
 import ResumeUpload from "./ResumeUpload";
 import { Link } from "react-router-dom";
 import PrepInLogo from "../components/PrepInLogo";
@@ -376,7 +376,7 @@ export default function Dashboard() {
   const [resumes, setResumes] = useState([]);
   const [showUpload, setShowUpload] = useState(false);
   const [loading, setLoading] = useState(true);
-
+  const [latestReport, setLatestReport] = useState(null);
   const fetchData = async () => {
     try {
       const [dashData, trendData, resumeData] = await Promise.all([
@@ -384,15 +384,29 @@ export default function Dashboard() {
         analyticsAPI.getTrend(),
         resumeAPI.getMyResumes(),
       ]);
+  
       setStats(dashData);
       setTrend(trendData.trend || []);
       setResumes(resumeData.resumes);
+  
+      // Naye user ka koi completed session hi nahi hoga, is liye report
+      // call karne ki zaroorat nahi — isse bekar 404 bhi console me nahi aayega.
+      if (dashData?.completed_sessions > 0) {
+        try {
+          const reportData = await reportAPI.getLatestReport();
+          setLatestReport(reportData.report);
+        } catch (err) {
+          setLatestReport(null); // fallback, agar backend phir bhi 404 de
+        }
+      } else {
+        setLatestReport(null);
+      }
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
     }
-  };
+  }; 
 
   useEffect(() => {
     fetchData();
@@ -407,7 +421,7 @@ export default function Dashboard() {
       alert(err.message);
     }
   };
-
+  
   return (
     <div className="relative min-h-screen bg-[#05040a] overflow-x-hidden">
       <NeuralBackground />
@@ -416,7 +430,7 @@ export default function Dashboard() {
       <nav className="relative z-10 border-b border-white/10 bg-white/[0.02] backdrop-blur-xl sticky top-0">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3.5 sm:py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-            <PrepInLogo size={42} />
+            <PrepInLogo size={42} clickable />
             <span className="font-display text-2xl font-bold tracking-tight text-white">
                 Prep
                 <span className="text-amber">In</span>
@@ -426,6 +440,14 @@ export default function Dashboard() {
             <Link to="/profile" className="text-blush/60 hover:text-white text-sm transition-colors duration-200">
               Profile
             </Link>
+            {latestReport && (
+            <Link
+                to={`/report/${latestReport.session_id}`}
+                className="text-blush/60 hover:text-white text-sm transition-colors duration-200"
+            >
+                Report
+            </Link>
+            )}
             <button onClick={logout} className="text-blush/60 hover:text-white text-sm transition-colors duration-200">
               Sign out
             </button>
@@ -449,7 +471,12 @@ export default function Dashboard() {
             <StatPill label="Resumes" value={stats?.resume_count} icon={FileText} delay={0} />
             <StatPill label="Sessions" value={stats?.total_sessions} icon={Folder} delay={0.06} />
             <StatPill label="Completed" value={stats?.completed_sessions} icon={CheckCircle2} delay={0.12} />
-            <StatPill label="Best score" value={stats?.best_score ? `${stats.best_score}/10` : "—"} icon={Trophy} delay={0.18} />
+            <StatPill
+  label="Best score"
+  value={stats?.best_score != null ? `${stats.best_score}/10` : "—"}
+  icon={Trophy}
+  delay={0.18}
+/>
           </div>
         )}
 

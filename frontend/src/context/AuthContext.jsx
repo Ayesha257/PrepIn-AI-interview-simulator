@@ -43,13 +43,22 @@ export function AuthProvider({ children }) {
     return data;
   };
 
+  // NEW: used when we already have { access_token, user } from another flow
+  // (e.g. Google login), so we don't call authAPI.login again — we just
+  // sync that data into context state, same way login()/verifyCode() do.
+  const loginWithToken = (data) => {
+    localStorage.setItem("token", data.access_token);
+    setUser(data.user);
+    return data;
+  };
+
   const logout = () => {
     localStorage.removeItem("token");
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, verifyCode, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, verifyCode, loginWithToken, logout }}>
       {children}
     </AuthContext.Provider>
   );
