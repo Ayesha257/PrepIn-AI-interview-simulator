@@ -1,17 +1,17 @@
-import os
-from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient
 from bson import ObjectId
+from config import settings
 
-from pathlib import Path
-load_dotenv(Path(__file__).resolve().parent.parent / ".env")
-_client = AsyncIOMotorClient(os.getenv("MONGO_URL"))
-_db = _client[os.getenv("DB_NAME", "interview_simulator")]
+_client = AsyncIOMotorClient(settings.MONGO_URL)
+_db = _client[settings.DB_NAME]
+
 
 async def fetch_resume_skills(user_id: str) -> dict:
     try:
-        doc = await _db.resumes.find_one({"user_id": ObjectId(user_id)},
-                                         sort=[("uploaded_at", -1)])
+        doc = await _db.resumes.find_one(
+            {"user_id": ObjectId(user_id)},
+            sort=[("uploaded_at", -1)],
+        )
         if doc:
             return {
                 "user_id": user_id,
@@ -21,6 +21,5 @@ async def fetch_resume_skills(user_id: str) -> dict:
                 "job_role": doc.get("job_role", ""),
             }
         return {"user_id": user_id, "skills": [], "experience_years": 0, "education": "", "job_role": ""}
-    except Exception as e:
-        print(f"[fetch_resume_skills] Error: {e}")
+    except Exception:
         return {"user_id": user_id, "skills": [], "experience_years": 0, "education": "", "job_role": ""}

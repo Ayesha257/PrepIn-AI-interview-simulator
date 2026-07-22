@@ -1,5 +1,5 @@
 // src/services/api.js
-const BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:8000/api";
+const BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:8000/api";
 
 // Helper to get token from localStorage
 const getToken = () => localStorage.getItem("token");
@@ -49,9 +49,6 @@ export const authAPI = {
   googleLogin: (token) =>
     apiFetch("/auth/google-login", { method: "POST", body: JSON.stringify({ token }) }),
 
-  forgotPassword: (email) =>
-    apiFetch("/auth/forgot-password", { method: "POST", body: JSON.stringify({ email }) }),
-
   resetPassword: (email, code, newPassword) =>
     apiFetch("/auth/reset-password", {
       method: "POST",
@@ -59,6 +56,8 @@ export const authAPI = {
     }),
 
   getMe: () => apiFetch("/auth/me"),
+  forgotPassword: (email) =>
+    apiFetch("/auth/forgot-password", { method: "POST", body: JSON.stringify({ email }) }),
 
   updateProfile: (data) =>
     apiFetch("/auth/profile", { method: "PUT", body: JSON.stringify(data) }),
@@ -95,13 +94,16 @@ export const interviewAPI = {
     }),
 
   startInterview: (sessionId) =>
-    apiFetch(`/interview/start?session_id=${sessionId}`, { method: "POST" }),
+    apiFetch(`/interview/start`, {
+      method: "POST",
+      body: JSON.stringify({ session_id: sessionId }),
+    }),
 
   submitAnswer: (sessionId, userAnswer) =>
-    apiFetch(
-      `/interview/answer?session_id=${sessionId}&user_answer=${encodeURIComponent(userAnswer)}`,
-      { method: "POST" }
-    ),
+    apiFetch(`/interview/answer`, {
+      method: "POST",
+      body: JSON.stringify({ session_id: sessionId, user_answer: userAnswer }),
+    }),
 
   getSession: (sessionId) => apiFetch(`/interview/session/${sessionId}`),
 };
@@ -109,4 +111,6 @@ export const interviewAPI = {
 // ──────────────── REPORT ────────────────
 export const reportAPI = {
   getReport: (sessionId) => apiFetch(`/report/report/${sessionId}`),
+
+  getLatestReport: () => apiFetch("/report/latest"),
 };
