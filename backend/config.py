@@ -34,6 +34,10 @@ class Settings:
         "https://prep-in-ai-interview-simulator-hcgr.vercel.app",
         "http://localhost:3000",
     ]
+    # Swagger / ReDoc — only enabled when BOTH are set (HTTP Basic Auth).
+    # If unset, /docs /redoc /openapi.json are unavailable to everyone.
+    DOCS_USERNAME: str | None = (os.getenv("DOCS_USERNAME") or "").strip() or None
+    DOCS_PASSWORD: str | None = (os.getenv("DOCS_PASSWORD") or "").strip() or None
 
 
 settings = Settings()

@@ -416,7 +416,9 @@ export default function Login() {
         <div className="flex-1 flex items-center justify-center xl:justify-end px-4 sm:px-6 xl:pr-16 2xl:pr-24 py-8 sm:py-10">
           <div className="w-full max-w-[420px] xl:mt-[-3vh]" style={{ perspective: 1200 }}>
             <div className="xl:hidden text-center mb-6">
-              <h1 className="font-display text-3xl font-bold text-amber tracking-tight">PrepIn</h1>
+              <Link to="/" className="font-display text-3xl font-bold text-amber tracking-tight hover:opacity-90 transition-opacity">
+                PrepIn
+              </Link>
               <p className="text-blush/50 mt-1 text-sm">AI Interview Simulator</p>
             </div>
 

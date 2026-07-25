@@ -1,8 +1,28 @@
 // src/services/api.js
-const BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:8000/api";
+
+/** Ensure base URL always ends with /api (common deploy misconfig omits it). */
+function normalizeApiBase(url) {
+  const raw = (url || "").trim().replace(/\/+$/, "");
+  if (!raw) return "http://localhost:8000/api";
+  return raw.endsWith("/api") ? raw : `${raw}/api`;
+}
+
+// Support both env names — README historically used REACT_APP_API_URL
+const BASE_URL = normalizeApiBase(
+  process.env.REACT_APP_API_BASE_URL || process.env.REACT_APP_API_URL
+);
 
 // Helper to get token from localStorage
 const getToken = () => localStorage.getItem("token");
+
+function formatErrorDetail(detail) {
+  if (!detail) return "Request failed";
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) {
+    return detail.map((d) => d.msg || JSON.stringify(d)).join(", ");
+  }
+  return "Request failed";
+}
 
 // Generic fetch wrapper
 async function apiFetch(endpoint, options = {}) {
@@ -21,11 +41,18 @@ async function apiFetch(endpoint, options = {}) {
     headers["Content-Type"] = "application/json";
   }
 
-  const res = await fetch(`${BASE_URL}${endpoint}`, { ...options, headers });
+  let res;
+  try {
+    res = await fetch(`${BASE_URL}${endpoint}`, { ...options, headers });
+  } catch {
+    throw new Error(
+      "Cannot reach the server. Check your connection, or that the backend is awake and MONGO_URL is correct."
+    );
+  }
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: "Something went wrong" }));
-    throw new Error(err.detail || "Request failed");
+    throw new Error(formatErrorDetail(err.detail) || "Request failed");
   }
 
   if (res.status === 204) return null;

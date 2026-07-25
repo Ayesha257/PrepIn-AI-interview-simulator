@@ -30,7 +30,7 @@ class UserResponse(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
-    user: UserResponse
+    user: Optional[dict] = None
 
 class User(BaseModel):
     email: str
@@ -40,11 +40,6 @@ class User(BaseModel):
 
 class GoogleTokenIn(BaseModel):
     token: str
-
-class TokenResponse(BaseModel):
-    access_token: str
-    token_type: str
-    user: Optional[dict] = None
 
 class VerifyCodeRequest(BaseModel):
     email: str

@@ -6,6 +6,7 @@ export default function PrepInLogo({
   size = 42,
   wordmark = false,
   clickable = false,
+  to = "/dashboard",
   amber = "#ED9E59",
   pink = "#E98CB9",
 }) {
@@ -16,7 +17,7 @@ export default function PrepInLogo({
 
   return (
     <div
-    onClick={() => clickable && navigate("/dashboard")}
+    onClick={() => clickable && navigate(to)}
     style={{
       display: "inline-flex",
       alignItems: "center",
