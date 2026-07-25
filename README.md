@@ -81,32 +81,6 @@ npm start
 REACT_APP_API_BASE_URL=http://localhost:8000/api
 REACT_APP_GOOGLE_CLIENT_ID=
 ```
-
-### Production env (important)
-
-**Vercel (frontend)** — Environment Variable:
-```
-REACT_APP_API_BASE_URL=https://prepin-ai-interview-simulator.onrender.com/api
-```
-The value **must** end with `/api`. If you omit `/api`, login/register show **"Not Found"**.
-
-**Render (backend)** — required variables match `backend/.env.example` (`MONGO_URL`, `SECRET_KEY`, etc.).
-In MongoDB Atlas → Network Access, allow Render (or `0.0.0.0/0` for free tier).
-Health check: `GET https://prepin-ai-interview-simulator.onrender.com/api/health`
-
-### Locking Swagger (`/docs`)
-
-By default `/docs`, `/redoc`, and `/openapi.json` return **404** (hidden from the public).
-
-To allow only you and your partner, set on Render:
-
-```
-DOCS_USERNAME=your_shared_username
-DOCS_PASSWORD=a_strong_shared_password
-```
-
-Then open `https://your-backend.onrender.com/docs` — the browser will ask for those credentials.
-
 ## Made By
 ```
 Ayesha Amer
