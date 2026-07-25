@@ -56,7 +56,7 @@ export default function ResumeUpload({ onUploadSuccess }) {
         Upload Resume
       </h2>
       <p className="text-blush/60 text-sm mb-6">
-        PDF or DOCX · max 5 MB. The Resume Agent will extract your skills in Week 3.
+        PDF or DOCX · max 5 MB.
       </p>
 
       {/* Drop zone */}
